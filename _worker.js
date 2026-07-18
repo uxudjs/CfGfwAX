@@ -5435,6 +5435,15 @@ async function 获取优选订阅生成器数据(优选订阅生成器HOST) {
 	return [优选IP, 其他节点LINK];
 }
 
+function 追加API备注(项目, API备注名) {
+	if (!API备注名) return 项目;
+	const 链式代理 = API备注名.match(/\$(socks5|http|https|turn|sstp):\/\/[^#\s]+/i)?.[0] || '';
+	const 显示备注 = API备注名.replace(链式代理, '').trim();
+	let 结果 = 显示备注 ? (项目.includes('#') ? `${项目} [${显示备注}]` : `${项目}#[${显示备注}]`) : 项目;
+	if (链式代理) 结果 += `${结果.includes('#') ? ' ' : '#'}${链式代理}`;
+	return 结果;
+}
+
 async function 请求优选API(urls, 默认端口 = '443', 超时时间 = 3000) {
 	if (!urls?.length) return [[], [], [], []];
 	const results = new Set(), 反代IP池 = new Set();
@@ -5451,10 +5460,7 @@ async function 请求优选API(urls, 默认端口 = '443', 超时时间 = 3000) 
 				// 处理第一个数组 - 优选IP
 				if (API备注名) {
 					for (const ip of 优选IP) {
-						const 处理后IP = ip.includes('#')
-							? `${ip} [${API备注名}]`
-							: `${ip}#[${API备注名}]`;
-						results.add(处理后IP);
+						results.add(追加API备注(ip, API备注名));
 						if (优选IP作为反代IP) 反代IP池.add(ip.split('#')[0]);
 					}
 				} else {
@@ -5581,10 +5587,7 @@ async function 请求优选API(urls, 默认端口 = '443', 超时时间 = 3000) 
 					const ipItem = hasPort ? line : `${hostPart}:${port}${remark}`;
 					// 处理第一个数组 - 优选IP
 					if (API备注名) {
-						const 处理后IP = ipItem.includes('#')
-							? `${ipItem} [${API备注名}]`
-							: `${ipItem}#[${API备注名}]`;
-						results.add(处理后IP);
+						results.add(追加API备注(ipItem, API备注名));
 					} else {
 						results.add(ipItem);
 					}
@@ -5605,8 +5608,7 @@ async function 请求优选API(urls, 默认端口 = '443', 超时时间 = 3000) 
 						const ipItem = `${wrappedIP}:${cols[portIdx]}#${cols[remarkIdx]}`;
 						// 处理第一个数组 - 优选IP
 						if (API备注名) {
-							const 处理后IP = `${ipItem} [${API备注名}]`;
-							results.add(处理后IP);
+							results.add(追加API备注(ipItem, API备注名));
 						} else {
 							results.add(ipItem);
 						}
@@ -5623,8 +5625,7 @@ async function 请求优选API(urls, 默认端口 = '443', 超时时间 = 3000) 
 						const ipItem = `${wrappedIP}:${port}#CF优选 ${cols[delayIdx]}ms ${cols[speedIdx]}MB/s`;
 						// 处理第一个数组 - 优选IP
 						if (API备注名) {
-							const 处理后IP = `${ipItem} [${API备注名}]`;
-							results.add(处理后IP);
+							results.add(追加API备注(ipItem, API备注名));
 						} else {
 							results.add(ipItem);
 						}
