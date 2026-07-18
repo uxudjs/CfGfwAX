@@ -427,8 +427,7 @@ export default {
 								if (链式代理匹配) {
 									try {
 										const 代理协议 = 链式代理匹配[1].toLowerCase(), 代理参数 = 链式代理匹配[2];
-										const 链式代理数据 = { type: 代理协议, ...获取SOCKS5账号(代理参数, 获取代理默认端口(代理协议)) };
-										完整节点路径 = `/video/${base64SecretEncode(JSON.stringify(链式代理数据), userID) + (config_JSON.启用0RTT ? '?ed=2560' : '')}`;
+										完整节点路径 = 生成链式代理路径(代理协议, 代理参数, userID) + (config_JSON.启用0RTT ? '?ed=2560' : '');
 										节点备注 = 节点备注.replace(链式代理匹配[0], '').trim() || 节点地址;
 									} catch (error) {
 										console.warn(`[订阅内容] 链式代理解析失败，已忽略该指令: ${链式代理匹配[0]} (${error && error.message ? error.message : error})`);
@@ -4271,6 +4270,12 @@ function base64SecretDecode(encoded, secret) {
 	return decoder.decode(data);
 }
 
+function 生成链式代理路径(代理协议, 代理账号, userID, 全局 = true) {
+	const 类型 = String(代理协议 || '').toLowerCase();
+	const 链式代理数据 = { type: 类型, global: Boolean(全局), ...获取SOCKS5账号(代理账号, 获取代理默认端口(类型)) };
+	return `/video/${base64SecretEncode(JSON.stringify(链式代理数据), userID)}`;
+}
+
 function 获取传输协议配置(配置 = {}) {
 	const 是gRPC = 配置.传输协议 === 'grpc';
 	return {
@@ -5234,7 +5239,7 @@ async function 读取config_JSON(env, hostname, userID, UA = "Mozilla/5.0", 重�
 	const 代理配置 = config_JSON.反代.路径模板[config_JSON.反代.SOCKS5.启用?.toUpperCase()];
 
 	let 路径反代参数 = '';
-	if (代理配置 && config_JSON.反代.SOCKS5.账号) 路径反代参数 = (config_JSON.反代.SOCKS5.全局 ? 代理配置.全局 : 代理配置.标准).replace(占位符, config_JSON.反代.SOCKS5.账号);
+	if (代理配置 && config_JSON.反代.SOCKS5.账号) 路径反代参数 = 生成链式代理路径(config_JSON.反代.SOCKS5.启用, config_JSON.反代.SOCKS5.账号, userID, config_JSON.反代.SOCKS5.全局).slice(1);
 	else if (config_JSON.反代[_p] !== 'auto') 路径反代参数 = config_JSON.反代.路径模板[_p].replace(占位符, config_JSON.反代[_p]);
 
 	let 反代查询参数 = '';
@@ -5659,13 +5664,14 @@ async function 反代参数获取(url, uuid, 默认反代IP = '', 默认反代�
 	if (链式代理路径匹配) {
 		try {
 			const 链式代理明文 = base64SecretDecode(链式代理路径匹配[1], uuid);
-			const { type, ...链式代理地址 } = JSON.parse(链式代理明文);
+			const { type, global: 链式代理全局 = true, ...链式代理地址 } = JSON.parse(链式代理明文);
 			if (!type || !反代协议默认端口[String(type).toLowerCase()]) throw new Error('链式代理类型无效');
+			if (typeof 链式代理全局 !== 'boolean') throw new Error('链式代理全局参数无效');
 			if (!链式代理地址.hostname || !链式代理地址.port) throw new Error('链式代理地址缺少 hostname 或 port');
 			我的SOCKS5账号 = '';
 			反代IP = '链式代理';
 			启用反代兜底 = false;
-			启用SOCKS5全局反代 = true;
+			启用SOCKS5全局反代 = 链式代理全局;
 			启用SOCKS5反代 = String(type).toLowerCase();
 			parsedSocks5Address = {
 				username: 链式代理地址.username,
