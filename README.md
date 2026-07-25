@@ -6,13 +6,11 @@
 - [🇹🇼 繁體中文](#-繁體中文)
 - [🇺🇸 English](#-english)
 
-![管理后台](./img.png)
-
 ---
 
 ## 🇨🇳 简体中文
 
-基于 edgetunnel 2.1 的 Cloudflare Workers/Pages 边缘隧道方案，提供管理后台、订阅生成与链式代理能力。
+基于 edgetunnel 二次开发的 Cloudflare Workers/Pages 边缘隧道方案，提供管理后台、订阅生成与链式代理能力。
 
 ### 主要功能
 
@@ -82,7 +80,7 @@
 
 ## 🇹🇼 繁體中文
 
-基於 edgetunnel 2.1 的 Cloudflare Workers/Pages 邊緣隧道方案，提供管理後台、訂閱產生與鏈式代理能力。
+基於 edgetunnel 二次開發的 Cloudflare Workers/Pages 邊緣隧道方案，提供管理後台、訂閱生成與鏈式代理能力。
 
 ### 主要功能
 
@@ -136,12 +134,6 @@
 /trojan=1.1.1.1:1234
 ```
 
-### 相關資源
-
-- [圖文部署教學](https://cmliussss.com/p/edt2/)
-- [Error 1101 影片解析](https://www.youtube.com/watch?v=r4uVTEJptdE)
-- [Pages 自訂網域影片教學](https://www.youtube.com/watch?v=LeT4jQUh8ok&t=851s)
-
 ### 免責聲明
 
 - 本專案僅供教育、科學研究及個人安全測試，請遵守所在地法律法規
@@ -152,7 +144,7 @@
 
 ## 🇺🇸 English
 
-A Cloudflare Workers/Pages edge tunnel solution based on edgetunnel 2.1, with an admin panel, subscription generation, and chained proxy support.
+An edge tunneling solution built on Cloudflare Workers/Pages, developed as a secondary fork of edgetunnel, featuring an admin panel, subscription generation, and chain proxy capabilities.
 
 ### Features
 
@@ -205,12 +197,6 @@ Visit `https://your-domain/admin` and sign in with the `ADMIN` password. You can
 /http=user:password@127.0.0.1:8080
 /trojan=1.1.1.1:1234
 ```
-
-### Resources
-
-- [Deployment guide](https://cmliussss.com/p/edt2/)
-- [Error 1101 video guide](https://www.youtube.com/watch?v=r4uVTEJptdE)
-- [Pages custom domain video guide](https://www.youtube.com/watch?v=LeT4jQUh8ok&t=851s)
 
 ### Disclaimer
 
