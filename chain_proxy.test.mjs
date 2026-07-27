@@ -51,6 +51,11 @@ assert.equal(追加API备注('1.2.3.4:443#节点', '来源 $socks5://proxy.examp
 assert.equal(追加API备注('1.2.3.4:443', '$socks5://[2001:db8::1]'), '1.2.3.4:443#$socks5://[2001:db8::1]');
 assert.equal(追加API备注('1.2.3.4:443#节点', '来源'), '1.2.3.4:443#节点 [来源]');
 
+{
+	const 配置 = await 读取config_JSON({ KV: { get: async () => null, put: async () => { } } }, 'worker.example', '11111111-1111-4111-8111-111111111111');
+	assert.equal(配置.优选订阅生成.SUBNAME, 'CfGfwAX');
+}
+
 for (const 代理协议 of ['socks5', 'http']) {
 	for (const 全局 of [false, true]) {
 		const KV存储 = new Map();
