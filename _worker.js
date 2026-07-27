@@ -5781,31 +5781,36 @@ async function 反代参数获取(url, uuid, 默认反代IP = '', 默认反代�
 		反代上下文.反代兜底 = 启用反代兜底;
 	};
 
-	const 链式代理路径匹配 = pathname.match(/\/video\/(.+)$/i);
+	const 链式代理路径匹配 = pathname.match(/\/video\/(.*)$/i);
 	if (链式代理路径匹配) {
-		try {
-			const 链式代理明文 = base64SecretDecode(链式代理路径匹配[1], uuid);
-			const { type, global: 链式代理全局 = true, ...链式代理地址 } = JSON.parse(链式代理明文);
-			if (!type || !反代协议默认端口[String(type).toLowerCase()]) throw new Error('链式代理类型无效');
-			if (typeof 链式代理全局 !== 'boolean') throw new Error('链式代理全局参数无效');
-			if (!链式代理地址.hostname || !链式代理地址.port) throw new Error('链式代理地址缺少 hostname 或 port');
-			我的SOCKS5账号 = '';
-			反代IP = '链式代理';
-			启用反代兜底 = false;
-			启用SOCKS5全局反代 = 链式代理全局;
-			启用SOCKS5反代 = String(type).toLowerCase();
-			parsedSocks5Address = {
-				username: 链式代理地址.username,
-				password: 链式代理地址.password,
-				hostname: 链式代理地址.hostname,
-				port: Number(链式代理地址.port)
-			};
-			if (isNaN(parsedSocks5Address.port)) throw new Error('链式代理端口无效');
-			保存快照();
-			return 反代上下文;
-		} catch (err) {
-			console.error('解析链式代理参数失败:', err.message);
+		const 原始密文 = 链式代理路径匹配[1];
+		const 候选密文 = [原始密文];
+		if (原始密文.endsWith('/')) 候选密文.push(原始密文.slice(0, -1));
+		for (const 密文 of 候选密文) {
+			try {
+				const 链式代理明文 = base64SecretDecode(密文, uuid);
+				const { type, global: 链式代理全局 = true, ...链式代理地址 } = JSON.parse(链式代理明文);
+				if (!type || !反代协议默认端口[String(type).toLowerCase()]) throw new Error('链式代理类型无效');
+				if (typeof 链式代理全局 !== 'boolean') throw new Error('链式代理全局参数无效');
+				if (!链式代理地址.hostname || !链式代理地址.port) throw new Error('链式代理地址缺少 hostname 或 port');
+				我的SOCKS5账号 = '';
+				反代IP = '链式代理';
+				启用反代兜底 = false;
+				启用SOCKS5全局反代 = 链式代理全局;
+				启用SOCKS5反代 = String(type).toLowerCase();
+				parsedSocks5Address = {
+					username: 链式代理地址.username,
+					password: 链式代理地址.password,
+					hostname: 链式代理地址.hostname,
+					port: Number(链式代理地址.port)
+				};
+				if (isNaN(parsedSocks5Address.port)) throw new Error('链式代理端口无效');
+				保存快照();
+				return 反代上下文;
+			} catch (err) { }
 		}
+		console.error('解析链式代理参数失败');
+		throw new Error('链式代理参数无效');
 	}
 
 	我的SOCKS5账号 = searchParams.get('socks5') || searchParams.get('http') || searchParams.get('https') || searchParams.get('turn') || searchParams.get('sstp') || null;

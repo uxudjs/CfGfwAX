@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
+import test from 'node:test';
 
 if (!globalThis.WebSocket) globalThis.WebSocket = { OPEN: 1, CLOSING: 2, CLOSED: 3 };
 
@@ -107,6 +108,41 @@ const 旧链式代理数据 = { type: 'socks5', username: 'demo', password: 'sec
 const 旧链式代理路径 = `/video/${base64SecretEncode(JSON.stringify(旧链式代理数据), 旧UUID)}`;
 const 旧链式代理配置 = await 反代参数获取(new URL(`https://worker.example${旧链式代理路径}`), 旧UUID);
 assert.equal(旧链式代理配置.代理全局, true);
+
+test('XHTTP 追加的单个尾斜杠不改变链式代理上下文', async () => {
+	const UUID = '11111111-1111-4111-8111-111111111111';
+	const 链式代理数据 = { type: 'socks5', username: 'demo', password: 'secret', hostname: 'proxy.example', port: 1080 };
+	const 密文 = base64SecretEncode(JSON.stringify(链式代理数据), UUID);
+	const 无尾斜杠配置 = await 反代参数获取(new URL(`https://worker.example/video/${密文}`), UUID);
+	const 有尾斜杠配置 = await 反代参数获取(new URL(`https://worker.example/video/${密文}/`), UUID);
+
+	assert.deepEqual(有尾斜杠配置, 无尾斜杠配置);
+});
+
+test('合法标准 Base64 尾斜杠由原始候选优先解析', async () => {
+	const 密钥 = String.fromCharCode(130);
+	const 链式代理数据 = { type: 'socks5', username: 'demo', password: 'secret', hostname: 'f.example', port: 1080 };
+	const 密文 = base64SecretEncode(JSON.stringify(链式代理数据), 密钥);
+	assert.ok(密文.endsWith('/'), '测试密文必须以合法 Base64 字符 / 结尾');
+
+	const 配置 = await 反代参数获取(new URL(`https://worker.example/video/${密文}`), 密钥);
+	assert.equal(配置.代理类型, 'socks5');
+	assert.equal(配置.代理参数.hostname, 'f.example');
+});
+
+test('无效链式代理密文必须失败关闭', async () => {
+	await assert.rejects(
+		反代参数获取(new URL('https://worker.example/video/invalid!'), 'test-secret'),
+		/链式代理参数无效/
+	);
+});
+
+test('带尾斜杠的无效链式代理密文必须失败关闭', async () => {
+	await assert.rejects(
+		反代参数获取(new URL('https://worker.example/video/invalid!/'), 'test-secret'),
+		/链式代理参数无效/
+	);
+});
 
 function 创建模拟TCP连接(响应块) {
 	const 写入 = [];
