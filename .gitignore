@@ -2,6 +2,17 @@
 demo/
 tmp/
 .workbuddy/
+AGENTS.md
+SPEC.md
+tasks/
+
+# Local tool and runtime state
+.agents/
+.codegraph/
+.codex/
+.runtime/
+__pycache__/
+*.py[cod]
 
 # 依赖包
 node_modules/
@@ -18,6 +29,8 @@ GRAINTCP_*
 # Cloudflare Workers
 .wrangler/
 wrangler-install.log
+.dev.vars
+.dev.vars.*
 
 # IDE
 .vscode/
