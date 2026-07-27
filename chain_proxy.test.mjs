@@ -38,7 +38,7 @@ const { default: worker, 追加API备注, base64SecretEncode, 读取config_JSON,
 			},
 			{ waitUntil() { } },
 		);
-		assert.equal(upstreamUrl, 'https://cloudflare-error-page-3th.pages.dev/assets/index-test.js');
+		assert.equal(upstreamUrl, 'https://uxudjs.github.io/CGAX-Pages/assets/index-test.js');
 		assert.equal(response.headers.get('Content-Type'), 'application/javascript');
 	} finally {
 		globalThis.fetch = originalFetch;

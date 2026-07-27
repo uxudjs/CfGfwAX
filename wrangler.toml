@@ -12,6 +12,9 @@ routes = [
 	{ pattern = "api.uxudjs.top", custom_domain = true },
 ]
 
+[vars]
+URL = "https://cloudflare-error-page-3th.pages.dev"
+
 [[kv_namespaces]]
 binding = "KV"
 id = "39c582f3fc624f96b54d74bfc0faef44"
