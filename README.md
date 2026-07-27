@@ -64,12 +64,6 @@
 /trojan=1.1.1.1:1234
 ```
 
-### 相关资源
-
-- [图文部署教程](https://cmliussss.com/p/edt2/)
-- [Error 1101 视频解析](https://www.youtube.com/watch?v=r4uVTEJptdE)
-- [Pages 自定义域视频教程](https://www.youtube.com/watch?v=LeT4jQUh8ok&t=851s)
-
 ### 免责声明
 
 - 本项目仅供教育、科学研究及个人安全测试，请遵守所在地法律法规
@@ -133,12 +127,6 @@
 /http=user:password@127.0.0.1:8080
 /trojan=1.1.1.1:1234
 ```
-
-### 相關資源
-
-- [圖文部署教學](https://cmliussss.com/p/edt2/)
-- [Error 1101 影片解析](https://www.youtube.com/watch?v=r4uVTEJptdE)
-- [Pages 自訂網域影片教學](https://www.youtube.com/watch?v=LeT4jQUh8ok&t=851s)
 
 ### 免責聲明
 
@@ -204,12 +192,6 @@ Visit `https://your-domain/admin` and sign in with the `ADMIN` password. You can
 /trojan=1.1.1.1:1234
 ```
 
-### Resources
-
-- [Deployment guide](https://cmliussss.com/p/edt2/)
-- [Error 1101 video guide](https://www.youtube.com/watch?v=r4uVTEJptdE)
-- [Pages custom domain video guide](https://www.youtube.com/watch?v=LeT4jQUh8ok&t=851s)
-
 ### Disclaimer
 
 - This project is intended only for education, scientific research, and personal security testing; comply with local laws and regulations
@@ -219,12 +201,6 @@ Visit `https://your-domain/admin` and sign in with the `ADMIN` password. You can
 ---
 
 ## 🙏 Acknowledgements / 特别鸣谢
-
-### Sponsors / 赞助支持
-
-- [Alice](https://url.cmliussss.com/alice)
-- [EasyLinks](https://www.vmrack.net?ref_code=5Zk7eNhbgL7)
-- [ZMTO (VTEXS)](https://zmto.com/?affid=1532)
 
 ### Upstream projects and contributors / 上游项目与贡献者
 

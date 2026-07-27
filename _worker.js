@@ -1,4 +1,4 @@
-const Version = '2.2.0';
+const Version = '2.3.0';
 let config_JSON, 缓存SOCKS5白名单 = null, 调试日志打印 = false;
 let SOCKS5白名单 = ['*tapecontent.net', '*cloudatacdn.com', '*loadshare.org', '*cdn-centaurus.com', 'scholar.google.com'];
 const Pages静态页面 = 'https://uxudjs.github.io/CGAX-Pages';
@@ -7,6 +7,7 @@ const WS早期数据最大字节 = 8 * 1024, WS早期数据最大头长度 = Mat
 const 上行合包目标字节 = 16 * 1024, 上行队列最大字节 = 16 * 1024 * 1024, 上行队列最大条目 = 4096;
 const 下行Grain包字节 = 32 * 1024, 下行Grain尾部阈值 = 512, 下行Grain静默毫秒 = 0;
 let TCP并发拨号数 = 2, 反代并发拨号数 = 1, 预加载竞速拨号 = false;
+let 连接保活间隔毫秒 = 30000;
 ///////////////////////////////////////////////////////查杀特征码///////////////////////////////////////////////
 const 特征码字典 = [
 	(Proxy.name + "IP").toUpperCase(),
@@ -39,6 +40,7 @@ export default {
 		预加载竞速拨号 = ['1', 'true'].includes(env.PRELOAD_RACE_DIAL) || 预加载竞速拨号;
 		反代并发拨号数 = Math.max(1, Number(env.PROXY_CONCURRENT_DIAL) || 反代并发拨号数);
 		TCP并发拨号数 = Math.max(1, Number(env.TCP_CONCURRENT_DIAL) || TCP并发拨号数);
+		连接保活间隔毫秒 = Math.max(1000, Number(env.KEEPALIVE_INTERVAL) || 连接保活间隔毫秒);
 		if (!env.TCP_CONCURRENT_DIAL && TCP并发拨号数 !== 1 && 识别运营商(request) === 'cmcc') TCP并发拨号数 = 1;
 		let 默认反代IP = (`${request.cf.colo}.${特征码字典[0]}.${特征码字典[1]}SsSs.nEt`).toLowerCase(), 默认反代兜底 = true;
 		if (env.PROXYIP) {
@@ -859,6 +861,7 @@ async function 处理gRPC请求(request, yourUUID, 反代上下文 = {}) {
 	let 当前写入Socket = null;
 	let 远端写入器 = null;
 	let GRPC上行写入队列 = null;
+	let GRPC保活定时器 = null;
 	//log('[gRPC] 开始处理双向流');
 	const grpcHeaders = new Headers({
 		'Content-Type': 'application/grpc',
@@ -950,6 +953,13 @@ async function 处理gRPC请求(request, yourUUID, 反代上下文 = {}) {
 				});
 			};
 
+			try {
+				GRPC保活定时器 = setInterval(() => {
+					if (已关闭) return;
+					try { grpcBridge.send(new Uint8Array(0)); } catch (e) { }
+				}, 连接保活间隔毫秒);
+			} catch (e) { }
+
 			const 关闭连接 = () => {
 				if (已关闭) return;
 				GRPC上行写入队列?.清空();
@@ -957,6 +967,7 @@ async function 处理gRPC请求(request, yourUUID, 反代上下文 = {}) {
 				已关闭 = true;
 				grpcBridge.readyState = WebSocket.CLOSED;
 				if (刷新定时器) clearTimeout(刷新定时器);
+				if (GRPC保活定时器) { try { clearInterval(GRPC保活定时器); } catch (e) { } GRPC保活定时器 = null; }
 				if (远端写入器) {
 					try { 远端写入器.releaseLock() } catch (e) { }
 					远端写入器 = null;
@@ -1102,6 +1113,7 @@ async function 处理gRPC请求(request, yourUUID, 反代上下文 = {}) {
 		},
 		cancel() {
 			GRPC上行写入队列?.清空();
+			if (GRPC保活定时器) { try { clearInterval(GRPC保活定时器); } catch (e) { } GRPC保活定时器 = null; }
 			try { remoteConnWrapper.socket?.close() } catch (e) { }
 			try { 木马UDP上下文.反代Socket?.close() } catch (e) { }
 			try { reader.releaseLock() } catch (e) { }
@@ -1157,6 +1169,12 @@ async function 处理WS请求(request, yourUUID, url, 反代上下文 = {}) {
 	try { (/** @type {any} */ (serverSock)).accept({ allowHalfOpen: true }) }
 	catch (_) { serverSock.accept() }
 	serverSock.binaryType = 'arraybuffer';
+	let WS保活定时器 = null;
+	try {
+		WS保活定时器 = setInterval(() => {
+			try { if (serverSock.readyState === WebSocket.OPEN) serverSock.send(''); } catch (e) { }
+		}, 连接保活间隔毫秒);
+	} catch (e) { }
 	let remoteConnWrapper = { socket: null, connectingPromise: null, retryConnect: null };
 	let isDnsQuery = false;
 	let 判断是否是木马 = null;
@@ -1514,6 +1532,7 @@ async function 处理WS请求(request, yourUUID, url, 反代上下文 = {}) {
 		WS显式传输停止接收 = true;
 		WS显式队列字节 = 0;
 		WS显式队列条目 = 0;
+		if (WS保活定时器) { try { clearInterval(WS保活定时器); } catch (e) { } WS保活定时器 = null; }
 		const msg = err?.message || `${err}`;
 		if (msg.includes('Network connection lost') || msg.includes('ReadableStream is closed')) {
 			log(`[WS转发] 连接结束: ${msg}`);
@@ -1566,6 +1585,7 @@ async function 处理WS请求(request, yourUUID, url, 反代上下文 = {}) {
 		入队WS显式传输(event.data);
 	});
 	serverSock.addEventListener('close', () => {
+		if (WS保活定时器) { try { clearInterval(WS保活定时器); } catch (e) { } WS保活定时器 = null; }
 		closeSocketQuietly(serverSock);
 		收尾WS显式传输();
 	});
