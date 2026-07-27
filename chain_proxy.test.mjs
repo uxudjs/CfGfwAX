@@ -19,6 +19,18 @@ const moduleUrl = `data:text/javascript;base64,${Buffer.from(`${source}\nexport 
 const { default: worker, 追加API备注, base64SecretEncode, 读取config_JSON, 反代参数获取, socks5Connect, connectStreams } = await import(moduleUrl);
 
 {
+	const request = new Request('https://worker.example/version?uuid=11111111-1111-4111-8111-111111111111');
+	Object.defineProperty(request, 'cf', { value: { colo: 'TPE' } });
+	const response = await worker.fetch(
+		request,
+		{ UUID: '11111111-1111-4111-8111-111111111111' },
+		{ waitUntil() { } },
+	);
+	assert.equal(response.status, 200);
+	assert.deepEqual(await response.json(), { Version: '2.2.0' });
+}
+
+{
 	const originalFetch = globalThis.fetch;
 	let upstreamUrl = null;
 	globalThis.fetch = async input => {
