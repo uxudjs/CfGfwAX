@@ -6,19 +6,17 @@
 - [🇹🇼 繁體中文](#-繁體中文)
 - [🇺🇸 English](#-english)
 
-![管理后台](./img.png)
-
 ---
 
 ## 🇨🇳 简体中文
 
-基于 edgetunnel 2.1 的 Cloudflare Workers/Pages 边缘隧道方案，提供管理后台、订阅生成与链式代理能力。
+基于 edgetunnel 2.1 二次开发的 Cloudflare Workers/Pages 边缘隧道方案，提供管理后台、订阅生成与链式代理能力。
 
 ### 主要功能
 
 - 🛡️ **多协议支持** - 支持 VLESS、Trojan 与 Shadowsocks
 - 📊 **管理后台** - 在线修改配置、查看日志与流量统计
-- 🛠️ **灵活部署** - 支持 Cloudflare Workers、Pages 上传及 Pages + GitHub
+- 🛠️ **灵活部署** - 支持 Cloudflare Workers 与 Pages 上传
 - 🔄 **订阅生成** - 适配 Clash、Sing-box、Surge 等主流客户端
 - ⚡ **链式代理** - 支持 ProxyIP、SOCKS5、HTTP 与 Trojan fallback
 - 🌐 **跨平台使用** - 支持 Windows、Android、iOS、macOS 与鸿蒙客户端
@@ -34,7 +32,7 @@
 
 - **Pages 上传（推荐）**：下载 [main.zip](https://github.com/uxudjs/CfGfwAX/archive/refs/heads/main.zip)，在 Cloudflare Pages 选择“上传资产”，配置 `ADMIN` 与 `KV` 后重新部署
 - **Workers**：新建 Worker，粘贴 [_worker.js](https://github.com/uxudjs/CfGfwAX/blob/main/_worker.js)，配置 `ADMIN`、`KV` 与自定义域
-- **Pages + GitHub**：Fork 本仓库，在 Cloudflare Pages 连接 Git 仓库，配置 `ADMIN` 与 `KV` 后部署
+- **禁止 Cloudflare 直接拉取 GitHub 仓库部署**：请勿在 Cloudflare Pages 或 Workers 中连接、导入或拉取本仓库；仅使用上述 Pages 上传或手动创建 Worker 的方式部署
 
 #### 3. 打开管理后台
 
@@ -82,13 +80,13 @@
 
 ## 🇹🇼 繁體中文
 
-基於 edgetunnel 2.1 的 Cloudflare Workers/Pages 邊緣隧道方案，提供管理後台、訂閱產生與鏈式代理能力。
+基於 edgetunnel 2.1 二次開發的 Cloudflare Workers/Pages 邊緣隧道方案，提供管理後台、訂閱產生與鏈式代理能力。
 
 ### 主要功能
 
 - 🛡️ **多協議支援** - 支援 VLESS、Trojan 與 Shadowsocks
 - 📊 **管理後台** - 線上修改設定、查看日誌與流量統計
-- 🛠️ **彈性部署** - 支援 Cloudflare Workers、Pages 上傳及 Pages + GitHub
+- 🛠️ **彈性部署** - 支援 Cloudflare Workers 與 Pages 上傳
 - 🔄 **訂閱產生** - 適配 Clash、Sing-box、Surge 等主流用戶端
 - ⚡ **鏈式代理** - 支援 ProxyIP、SOCKS5、HTTP 與 Trojan fallback
 - 🌐 **跨平台使用** - 支援 Windows、Android、iOS、macOS 與鴻蒙用戶端
@@ -104,7 +102,7 @@
 
 - **Pages 上傳（推薦）**：下載 [main.zip](https://github.com/uxudjs/CfGfwAX/archive/refs/heads/main.zip)，在 Cloudflare Pages 選擇「上傳資產」，設定 `ADMIN` 與 `KV` 後重新部署
 - **Workers**：建立 Worker，貼上 [_worker.js](https://github.com/uxudjs/CfGfwAX/blob/main/_worker.js)，設定 `ADMIN`、`KV` 與自訂網域
-- **Pages + GitHub**：Fork 本儲存庫，在 Cloudflare Pages 連接 Git 儲存庫，設定 `ADMIN` 與 `KV` 後部署
+- **禁止 Cloudflare 直接拉取 GitHub 儲存庫部署**：請勿在 Cloudflare Pages 或 Workers 中連接、匯入或拉取本儲存庫；僅使用上述 Pages 上傳或手動建立 Worker 的方式部署
 
 #### 3. 開啟管理後台
 
@@ -152,13 +150,13 @@
 
 ## 🇺🇸 English
 
-A Cloudflare Workers/Pages edge tunnel solution based on edgetunnel 2.1, with an admin panel, subscription generation, and chained proxy support.
+A Cloudflare Workers/Pages edge tunnel solution further developed from edgetunnel 2.1, with an admin panel, subscription generation, and chained proxy support.
 
 ### Features
 
 - 🛡️ **Multiple protocols** - Supports VLESS, Trojan, and Shadowsocks
 - 📊 **Admin panel** - Update settings and inspect logs and traffic statistics online
-- 🛠️ **Flexible deployment** - Supports Cloudflare Workers, Pages upload, and Pages + GitHub
+- 🛠️ **Flexible deployment** - Supports Cloudflare Workers and Pages upload
 - 🔄 **Subscription generation** - Works with Clash, Sing-box, Surge, and other popular clients
 - ⚡ **Chained proxies** - Supports ProxyIP, SOCKS5, HTTP, and Trojan fallback
 - 🌐 **Cross-platform** - Works with Windows, Android, iOS, macOS, and HarmonyOS clients
@@ -174,7 +172,7 @@ A Cloudflare Workers/Pages edge tunnel solution based on edgetunnel 2.1, with an
 
 - **Pages upload (recommended)**: Download [main.zip](https://github.com/uxudjs/CfGfwAX/archive/refs/heads/main.zip), choose “Upload assets” in Cloudflare Pages, configure `ADMIN` and `KV`, then redeploy
 - **Workers**: Create a Worker, paste in [_worker.js](https://github.com/uxudjs/CfGfwAX/blob/main/_worker.js), then configure `ADMIN`, `KV`, and a custom domain
-- **Pages + GitHub**: Fork this repository, connect it to Cloudflare Pages, configure `ADMIN` and `KV`, then deploy
+- **Cloudflare must not pull this GitHub repository directly**: Do not connect, import, or pull this repository through Cloudflare Pages or Workers; use only the Pages upload or manual Worker methods above
 
 #### 3. Open the admin panel
 
