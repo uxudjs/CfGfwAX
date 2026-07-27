@@ -16,7 +16,34 @@ Object.defineProperty(crypto.subtle, 'digest', {
 
 const source = await readFile(new URL('./_worker.js', import.meta.url), 'utf8');
 const moduleUrl = `data:text/javascript;base64,${Buffer.from(`${source}\nexport { 追加API备注, base64SecretEncode, 读取config_JSON, 反代参数获取, socks5Connect, connectStreams };`).toString('base64')}`;
-const { 追加API备注, base64SecretEncode, 读取config_JSON, 反代参数获取, socks5Connect, connectStreams } = await import(moduleUrl);
+const { default: worker, 追加API备注, base64SecretEncode, 读取config_JSON, 反代参数获取, socks5Connect, connectStreams } = await import(moduleUrl);
+
+{
+	const originalFetch = globalThis.fetch;
+	let upstreamUrl = null;
+	globalThis.fetch = async input => {
+		upstreamUrl = typeof input === 'string' ? input : input.url;
+		return new Response('console.log("loaded")', {
+			headers: { 'Content-Type': 'application/javascript' },
+		});
+	};
+	try {
+		const request = new Request('https://worker.example/assets/index-test.js');
+		Object.defineProperty(request, 'cf', { value: { colo: 'TPE' } });
+		const response = await worker.fetch(
+			request,
+			{
+				UUID: '11111111-1111-4111-8111-111111111111',
+				KV: { get: async () => null },
+			},
+			{ waitUntil() { } },
+		);
+		assert.equal(upstreamUrl, 'https://cloudflare-error-page-3th.pages.dev/assets/index-test.js');
+		assert.equal(response.headers.get('Content-Type'), 'application/javascript');
+	} finally {
+		globalThis.fetch = originalFetch;
+	}
+}
 
 assert.equal(追加API备注('1.2.3.4:443#节点', '$socks5://proxy.example:1080'), '1.2.3.4:443#节点 $socks5://proxy.example:1080');
 assert.equal(追加API备注('1.2.3.4:443#节点', '来源 $socks5://proxy.example'), '1.2.3.4:443#节点 [来源] $socks5://proxy.example');
