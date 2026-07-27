@@ -1645,7 +1645,6 @@ async function 转发木马UDP反代数据(chunk, webSocket, 上下文, request)
 		const TCP连接 = 创建请求TCP连接器(request);
 		const socket = await 连接木马反代(data, TCP连接, 上下文.反代地址);
 		上下文.反代Socket = socket;
-		socket.closed.catch(() => { }).finally(() => closeSocketQuietly(webSocket));
 		connectStreams(socket, webSocket, null, null);
 		return;
 	}
@@ -2175,7 +2174,6 @@ async function forwardataTCP(host, portNum, rawData, ws, respHeader, remoteConnW
 			}
 			if (本次发送首包) 已通过代理发送首包 = true;
 			remoteConnWrapper.socket = newSocket;
-			newSocket.closed.catch(() => { }).finally(() => closeSocketQuietly(ws));
 			connectStreams(newSocket, ws, respHeader, null);
 		})();
 
@@ -2566,7 +2564,7 @@ function 创建下行Grain发送器(webSocket, headerData = null) {
 }
 
 async function connectStreams(remoteSocket, webSocket, headerData, retryFunc) {
-	let header = headerData, hasData = false, reader, useBYOB = false;
+	let header = headerData, hasData = false, reader, useBYOB = false, streamError = null;
 	const BYOB单次读取上限 = 64 * 1024;
 	const 下行发送器 = 创建下行Grain发送器(webSocket, header);
 	header = null;
@@ -2601,9 +2599,24 @@ async function connectStreams(remoteSocket, webSocket, headerData, retryFunc) {
 			}
 		}
 		await 下行发送器.flush();
-	} catch (err) { closeSocketQuietly(webSocket) }
-	finally { try { reader.cancel() } catch (e) { } try { reader.releaseLock() } catch (e) { } }
-	if (!hasData && retryFunc) await retryFunc();
+	} catch (err) { streamError = err }
+	finally { try { await reader.cancel() } catch (e) { } try { reader.releaseLock() } catch (e) { } }
+	if (streamError) {
+		try { remoteSocket.close?.() } catch (e) { }
+		closeSocketQuietly(webSocket);
+		return;
+	}
+	if (!hasData && retryFunc) {
+		try {
+			try { remoteSocket.close?.() } catch (e) { }
+			await retryFunc();
+			return;
+		} catch (err) {
+			closeSocketQuietly(webSocket);
+			return;
+		}
+	}
+	closeSocketQuietly(webSocket);
 }
 
 function isSpeedTestSite(hostname) {
@@ -2624,30 +2637,78 @@ function isSpeedTestSite(hostname) {
 async function socks5Connect(targetHost, targetPort, initialData, TCP连接, parsedSocks5) {
 	const { username, password, hostname, port } = parsedSocks5 || {};
 	const socket = TCP连接({ hostname, port }), writer = socket.writable.getWriter(), reader = socket.readable.getReader();
+	let bufferedData = new Uint8Array(0);
+	const 读取固定长度 = async (length, errorMessage) => {
+		while (bufferedData.byteLength < length) {
+			const { done, value } = await reader.read();
+			if (done || !value) throw new Error(errorMessage);
+			bufferedData = 拼接字节数据(bufferedData, 数据转Uint8Array(value));
+		}
+		const result = bufferedData.subarray(0, length);
+		bufferedData = bufferedData.subarray(length);
+		return result;
+	};
 	try {
 		const authMethods = username && password ? new Uint8Array([0x05, 0x02, 0x00, 0x02]) : new Uint8Array([0x05, 0x01, 0x00]);
 		await writer.write(authMethods);
-		let response = await reader.read();
-		if (response.done || response.value.byteLength < 2) throw new Error('S5 method selection failed');
 
-		const selectedMethod = new Uint8Array(response.value)[1];
+		const methodResponse = await 读取固定长度(2, 'S5 method selection failed');
+		if (methodResponse[0] !== 0x05) throw new Error('S5 method selection failed');
+		const selectedMethod = methodResponse[1];
 		if (selectedMethod === 0x02) {
 			if (!username || !password) throw new Error('S5 requires authentication');
 			const userBytes = new TextEncoder().encode(username), passBytes = new TextEncoder().encode(password);
 			const authPacket = new Uint8Array([0x01, userBytes.length, ...userBytes, passBytes.length, ...passBytes]);
 			await writer.write(authPacket);
-			response = await reader.read();
-			if (response.done || new Uint8Array(response.value)[1] !== 0x00) throw new Error('S5 authentication failed');
+			const authResponse = await 读取固定长度(2, 'S5 authentication failed');
+			if (authResponse[0] !== 0x01 || authResponse[1] !== 0x00) throw new Error('S5 authentication failed');
 		} else if (selectedMethod !== 0x00) throw new Error(`S5 unsupported auth method: ${selectedMethod}`);
 
 		const hostBytes = new TextEncoder().encode(targetHost);
 		const connectPacket = new Uint8Array([0x05, 0x01, 0x00, 0x03, hostBytes.length, ...hostBytes, targetPort >> 8, targetPort & 0xff]);
 		await writer.write(connectPacket);
-		response = await reader.read();
-		if (response.done || new Uint8Array(response.value)[1] !== 0x00) throw new Error('S5 connection failed');
+		const connectResponse = await 读取固定长度(4, 'S5 connection failed');
+		if (connectResponse[0] !== 0x05 || connectResponse[1] !== 0x00 || connectResponse[2] !== 0x00) throw new Error('S5 connection failed');
+		if (connectResponse[3] === 0x01) await 读取固定长度(6, 'S5 connection failed');
+		else if (connectResponse[3] === 0x04) await 读取固定长度(18, 'S5 connection failed');
+		else if (connectResponse[3] === 0x03) {
+			const addressLength = (await 读取固定长度(1, 'S5 connection failed'))[0];
+			await 读取固定长度(addressLength + 2, 'S5 connection failed');
+		} else throw new Error(`S5 unsupported address type: ${connectResponse[3]}`);
 
 		if (有效数据长度(initialData) > 0) await writer.write(initialData);
 		writer.releaseLock(); reader.releaseLock();
+		if (bufferedData.byteLength > 0) {
+			const 首包 = bufferedData;
+			const 隧道Reader = socket.readable.getReader();
+			let 已释放 = false;
+			const 释放Reader = () => {
+				if (已释放) return;
+				已释放 = true;
+				try { 隧道Reader.releaseLock() } catch (e) { }
+			};
+			const readable = new ReadableStream({
+				start(controller) {
+					controller.enqueue(首包);
+				},
+				async pull(controller) {
+					try {
+						const { done, value } = await 隧道Reader.read();
+						if (done) {
+							释放Reader();
+							controller.close();
+						} else controller.enqueue(value);
+					} catch (error) {
+						释放Reader();
+						controller.error(error);
+					}
+				},
+				async cancel(reason) {
+					try { await 隧道Reader.cancel(reason) } finally { 释放Reader() }
+				}
+			});
+			return { readable, writable: socket.writable, closed: socket.closed, close: () => socket.close() };
+		}
 		return socket;
 	} catch (error) {
 		try { writer.releaseLock() } catch (e) { }
@@ -3177,6 +3238,7 @@ class TlsClient {
 	constructor(socket, options = {}) {
 		if (this.socket = socket, this.serverName = options.serverName || "", this.supportTls13 = !1 !== options.tls13, this.supportTls12 = !1 !== options.tls12, !this.supportTls13 && !this.supportTls12) throw new Error("At least one TLS version must be enabled");
 		this.alpnProtocols = Array.isArray(options.alpn) ? options.alpn : options.alpn ? [options.alpn] : null, this.allowChacha = options.allowChacha !== false, this.timeout = options.timeout ?? 3e4, this.clientRandom = randomBytes(32), this.serverRandom = null, this.handshakeChunks = [], this.handshakeComplete = !1, this.negotiatedAlpn = null, this.cipherSuite = null, this.cipherConfig = null, this.isTls13 = !1, this.masterSecret = null, this.handshakeSecret = null, this.clientWriteKey = null, this.serverWriteKey = null, this.clientWriteIv = null, this.serverWriteIv = null, this.clientHandshakeKey = null, this.serverHandshakeKey = null, this.clientHandshakeIv = null, this.serverHandshakeIv = null, this.clientAppKey = null, this.serverAppKey = null, this.clientAppIv = null, this.serverAppIv = null, this.clientWriteCryptoKey = null, this.serverWriteCryptoKey = null, this.clientHandshakeCryptoKey = null, this.serverHandshakeCryptoKey = null, this.clientAppCryptoKey = null, this.serverAppCryptoKey = null, this.clientSeqNum = 0n, this.serverSeqNum = 0n, this.recordParser = new TlsRecordParser, this.handshakeParser = new TlsHandshakeParser, this.keyPairs = new Map, this.ecdhKeyPair = null, this.sawCert = !1
+		this.clientAppTrafficSecret = null, this.serverAppTrafficSecret = null, this.writeQueue = Promise.resolve(), this.keyUpdateWriteGate = null, this.writeError = null
 	}
 	recordHandshake(chunk) { this.handshakeChunks.push(chunk) }
 	transcript() { return 1 === this.handshakeChunks.length ? this.handshakeChunks[0] : concatBytes(...this.handshakeChunks) }
@@ -3377,6 +3439,7 @@ class TlsClient {
 			masterSecret = await hkdfExtract(hashName, masterDerivedSecret, new Uint8Array(hashLen)),
 			clientAppTrafficSecret = await hkdfExpandLabel(hashName, masterSecret, "c ap traffic", applicationTranscriptHash, hashLen),
 			serverAppTrafficSecret = await hkdfExpandLabel(hashName, masterSecret, "s ap traffic", applicationTranscriptHash, hashLen);
+		this.clientAppTrafficSecret = clientAppTrafficSecret, this.serverAppTrafficSecret = serverAppTrafficSecret;
 		[this.clientAppKey, this.clientAppIv] = await deriveTrafficKeys(hashName, clientAppTrafficSecret, keyLen, ivLen), [this.serverAppKey, this.serverAppIv] = await deriveTrafficKeys(hashName, serverAppTrafficSecret, keyLen, ivLen);
 		if (!this.cipherConfig.chacha) [this.clientAppCryptoKey, this.serverAppCryptoKey] = await Promise.all([importAesGcmKey(this.clientAppKey, ["encrypt"]), importAesGcmKey(this.serverAppKey, ["decrypt"])]);
 		const clientFinishedKey = await hkdfExpandLabel(hashName, clientHandshakeTrafficSecret, "finished", EMPTY_BYTES, hashLen),
@@ -3423,14 +3486,15 @@ class TlsClient {
 		for (; innerTypeIndex >= 0 && !decrypted[innerTypeIndex];) innerTypeIndex--;
 		return innerTypeIndex < 0 ? EMPTY_BYTES : decrypted.slice(0, innerTypeIndex + 1)
 	}
-	async encryptTls13(data) {
-		const plaintext = concatBytes(data, [CONTENT_TYPE_APPLICATION_DATA]),
+	async encryptTls13Content(data, innerType) {
+		const plaintext = concatBytes(data, [innerType]),
 			nonce = xorSequenceIntoIv(this.clientAppIv, this.clientSeqNum++),
 			additionalData = tlsBytes(CONTENT_TYPE_APPLICATION_DATA, 3, 3, uint16be(plaintext.length + 16));
 		if (this.cipherConfig.chacha) return chacha20Poly1305Encrypt(this.clientAppKey, nonce, plaintext, additionalData);
 		if (!this.clientAppCryptoKey) this.clientAppCryptoKey = await importAesGcmKey(this.clientAppKey, ["encrypt"]);
 		return aesGcmEncryptWithKey(this.clientAppCryptoKey, nonce, plaintext, additionalData)
 	}
+	async encryptTls13(data) { return this.encryptTls13Content(data, CONTENT_TYPE_APPLICATION_DATA) }
 	async decryptTls13(ciphertext) {
 		const nonce = xorSequenceIntoIv(this.serverAppIv, this.serverSeqNum++),
 			additionalData = tlsBytes(CONTENT_TYPE_APPLICATION_DATA, 3, 3, uint16be(ciphertext.length)),
@@ -3446,10 +3510,59 @@ class TlsClient {
 			type: plaintext[innerTypeIndex]
 		}
 	}
-	async write(data) {
-		if (!this.handshakeComplete) throw new Error("Handshake not complete");
-		const plaintext = 数据转Uint8Array(data);
-		if (!plaintext.byteLength) return;
+	queueWrite(operation) {
+		const queued = this.writeQueue.then(operation);
+		this.writeQueue = queued.catch((() => { }));
+		return queued
+	}
+	async updateServerAppTrafficKeys() {
+		const hashName = this.cipherConfig.hash,
+			hashLen = hashByteLength(hashName);
+		this.serverAppTrafficSecret = await hkdfExpandLabel(hashName, this.serverAppTrafficSecret, "traffic upd", EMPTY_BYTES, hashLen);
+		[this.serverAppKey, this.serverAppIv] = await deriveTrafficKeys(hashName, this.serverAppTrafficSecret, this.cipherConfig.keyLen, this.cipherConfig.ivLen);
+		this.serverAppCryptoKey = null, this.serverSeqNum = 0n
+	}
+	async updateClientAppTrafficKeys() {
+		const hashName = this.cipherConfig.hash,
+			hashLen = hashByteLength(hashName);
+		this.clientAppTrafficSecret = await hkdfExpandLabel(hashName, this.clientAppTrafficSecret, "traffic upd", EMPTY_BYTES, hashLen);
+		[this.clientAppKey, this.clientAppIv] = await deriveTrafficKeys(hashName, this.clientAppTrafficSecret, this.cipherConfig.keyLen, this.cipherConfig.ivLen);
+		this.clientAppCryptoKey = null, this.clientSeqNum = 0n
+	}
+	async sendKeyUpdateResponse() {
+		return this.queueWrite((async () => {
+			const message = buildHandshakeMessage(HANDSHAKE_TYPE_KEY_UPDATE, new Uint8Array([0])),
+				encrypted = await this.encryptTls13Content(message, CONTENT_TYPE_HANDSHAKE),
+				writer = this.socket.writable.getWriter();
+			try {
+				await writer.write(buildTlsRecord(CONTENT_TYPE_APPLICATION_DATA, encrypted));
+				await this.updateClientAppTrafficKeys()
+			} finally {
+				writer.releaseLock()
+			}
+		}))
+	}
+	async handleKeyUpdate(message) {
+		if (message.body.length !== 1 || (message.body[0] !== 0 && message.body[0] !== 1)) throw new Error("Invalid TLS 1.3 KeyUpdate");
+		let resolveGate, rejectGate;
+		if (message.body[0] === 1) {
+			const promise = new Promise(((resolve, reject) => { resolveGate = resolve, rejectGate = reject }));
+			promise.catch((() => { }));
+			this.keyUpdateWriteGate = { promise, resolve: resolveGate, reject: rejectGate }
+		}
+		try {
+			await this.updateServerAppTrafficKeys();
+			if (message.body[0] === 1) await this.sendKeyUpdateResponse();
+			this.keyUpdateWriteGate?.resolve()
+		} catch (error) {
+			this.writeError = error;
+			this.keyUpdateWriteGate?.reject(error);
+			throw error
+		} finally {
+			this.keyUpdateWriteGate = null
+		}
+	}
+	async writeApplicationData(plaintext) {
 		const writer = this.socket.writable.getWriter();
 		try {
 			const records = [];
@@ -3462,6 +3575,14 @@ class TlsClient {
 		} finally {
 			writer.releaseLock()
 		}
+	}
+	async write(data) {
+		if (!this.handshakeComplete) throw new Error("Handshake not complete");
+		const plaintext = 数据转Uint8Array(data);
+		if (!plaintext.byteLength) return;
+		while (this.keyUpdateWriteGate) await this.keyUpdateWriteGate.promise;
+		if (this.writeError) throw this.writeError;
+		return this.queueWrite((() => this.writeApplicationData(plaintext)))
 	}
 	async read() {
 		for (; ;) {
@@ -3482,7 +3603,7 @@ class TlsClient {
 				if (type !== CONTENT_TYPE_HANDSHAKE) continue;
 				let message;
 				for (this.handshakeParser.feed(data); message = this.handshakeParser.next();)
-					if (message.type !== HANDSHAKE_TYPE_NEW_SESSION_TICKET && message.type === HANDSHAKE_TYPE_KEY_UPDATE) throw new Error("TLS 1.3 KeyUpdate is not supported by TLSClientMini")
+					if (message.type === HANDSHAKE_TYPE_KEY_UPDATE) await this.handleKeyUpdate(message)
 			}
 			const reader = this.socket.readable.getReader();
 			try {

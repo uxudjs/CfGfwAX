@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 
+if (!globalThis.WebSocket) globalThis.WebSocket = { OPEN: 1, CLOSING: 2, CLOSED: 3 };
+
 const 原生Digest = crypto.subtle.digest.bind(crypto.subtle);
 Object.defineProperty(crypto.subtle, 'digest', {
 	value: async (algorithm, data) => {
@@ -13,8 +15,8 @@ Object.defineProperty(crypto.subtle, 'digest', {
 });
 
 const source = await readFile(new URL('./_worker.js', import.meta.url), 'utf8');
-const moduleUrl = `data:text/javascript;base64,${Buffer.from(`${source}\nexport { 追加API备注, base64SecretEncode, 读取config_JSON, 反代参数获取 };`).toString('base64')}`;
-const { 追加API备注, base64SecretEncode, 读取config_JSON, 反代参数获取 } = await import(moduleUrl);
+const moduleUrl = `data:text/javascript;base64,${Buffer.from(`${source}\nexport { 追加API备注, base64SecretEncode, 读取config_JSON, 反代参数获取, socks5Connect, connectStreams };`).toString('base64')}`;
+const { 追加API备注, base64SecretEncode, 读取config_JSON, 反代参数获取, socks5Connect, connectStreams } = await import(moduleUrl);
 
 assert.equal(追加API备注('1.2.3.4:443#节点', '$socks5://proxy.example:1080'), '1.2.3.4:443#节点 $socks5://proxy.example:1080');
 assert.equal(追加API备注('1.2.3.4:443#节点', '来源 $socks5://proxy.example'), '1.2.3.4:443#节点 [来源] $socks5://proxy.example');
@@ -60,3 +62,222 @@ const 旧链式代理数据 = { type: 'socks5', username: 'demo', password: 'sec
 const 旧链式代理路径 = `/video/${base64SecretEncode(JSON.stringify(旧链式代理数据), 旧UUID)}`;
 const 旧链式代理配置 = await 反代参数获取(new URL(`https://worker.example${旧链式代理路径}`), 旧UUID);
 assert.equal(旧链式代理配置.代理全局, true);
+
+function 创建模拟TCP连接(响应块) {
+	const 写入 = [];
+	let 已关闭 = false;
+	const readable = new ReadableStream({
+		start(controller) {
+			for (const chunk of 响应块) controller.enqueue(new Uint8Array(chunk));
+			controller.close();
+		}
+	});
+	const writable = new WritableStream({
+		write(chunk) {
+			写入.push(new Uint8Array(chunk));
+		}
+	});
+	const socket = {
+		readable,
+		writable,
+		closed: Promise.resolve(),
+		close() {
+			已关闭 = true;
+		}
+	};
+	return { socket, 写入, get 已关闭() { return 已关闭 } };
+}
+
+{
+	const 模拟连接 = 创建模拟TCP连接([
+		[0x05],
+		[0x02],
+		[0x01],
+		[0x00],
+		[0x05, 0x00, 0x00],
+		[0x03, 0x05, 0x70, 0x72, 0x6f],
+		[0x78, 0x79, 0x1f, 0x90],
+	]);
+	const socket = await socks5Connect(
+		'example.com',
+		443,
+		new Uint8Array([0xaa, 0xbb]),
+		() => 模拟连接.socket,
+		{ username: 'demo', password: 'secret', hostname: 'proxy.example', port: 1080 },
+	);
+	assert.equal(socket, 模拟连接.socket, 'SOCKS5 分片握手后应返回原始隧道');
+	assert.deepEqual([...模拟连接.写入.at(-1)], [0xaa, 0xbb], 'SOCKS5 分片握手后应写入首包');
+	assert.equal(模拟连接.已关闭, false);
+}
+
+{
+	const 模拟连接 = 创建模拟TCP连接([
+		[0x05, 0x00],
+		[0x05, 0x00, 0x00, 0x01, 127, 0, 0, 1, 0x1f, 0x90, 0xde, 0xad],
+		[0xbe, 0xef],
+	]);
+	const socket = await socks5Connect(
+		'example.com',
+		443,
+		null,
+		() => 模拟连接.socket,
+		{ hostname: 'proxy.example', port: 1080 },
+	);
+	const reader = socket.readable.getReader();
+	const 收到 = [];
+	while (true) {
+		const { done, value } = await reader.read();
+		if (done) break;
+		收到.push(...value);
+	}
+	assert.deepEqual(收到, [0xde, 0xad, 0xbe, 0xef], 'SOCKS5 CONNECT 回包后的隧道数据不得丢失');
+}
+
+{
+	const 事件 = [];
+	const webSocket = {
+		readyState: WebSocket.OPEN,
+		send(payload) {
+			事件.push(['send', [...new Uint8Array(payload)]]);
+		},
+		close() {
+			事件.push(['close']);
+			this.readyState = WebSocket.CLOSED;
+		},
+	};
+	const remoteSocket = {
+		readable: new ReadableStream({
+			start(controller) {
+				controller.enqueue(new Uint8Array([0xde, 0xad, 0xbe, 0xef]));
+				controller.close();
+			}
+		}),
+		closed: Promise.resolve(),
+	};
+
+	await connectStreams(remoteSocket, webSocket, null, null);
+
+	assert.deepEqual(事件, [
+		['send', [0xde, 0xad, 0xbe, 0xef]],
+		['close'],
+	], 'socket 关闭后必须先发送尾部数据再关闭 WebSocket');
+}
+
+{
+	let 重试次数 = 0;
+	const 事件 = [];
+	const webSocket = {
+		readyState: WebSocket.OPEN,
+		send() {
+			事件.push('send');
+		},
+		close() {
+			事件.push('close');
+			this.readyState = WebSocket.CLOSED;
+		},
+	};
+	const remoteSocket = {
+		readable: new ReadableStream({
+			start(controller) {
+				controller.close();
+			}
+		}),
+		close() {
+			事件.push('remote-close');
+		},
+	};
+
+	await connectStreams(remoteSocket, webSocket, null, async () => {
+		重试次数++;
+	});
+
+	assert.equal(重试次数, 1, '空响应必须触发一次重试');
+	assert.deepEqual(事件, ['remote-close'], '重试交接时不得关闭 WebSocket');
+}
+
+{
+	const 事件 = [];
+	const webSocket = {
+		readyState: WebSocket.OPEN,
+		send() {
+			throw new Error('send failed');
+		},
+		close() {
+			事件.push('close');
+			this.readyState = WebSocket.CLOSED;
+		},
+	};
+	const remoteSocket = {
+		readable: new ReadableStream({
+			start(controller) {
+				controller.enqueue(new Uint8Array([0x01]));
+				controller.close();
+			}
+		}),
+		close() {
+			事件.push('remote-close');
+		},
+	};
+
+	await connectStreams(remoteSocket, webSocket, null, null);
+
+	assert.deepEqual(事件, ['remote-close', 'close'], '发送失败必须关闭远端连接和 WebSocket 各一次');
+}
+
+{
+	const 事件 = [];
+	const webSocket = {
+		readyState: WebSocket.OPEN,
+		send() {
+			事件.push('send');
+		},
+		close() {
+			事件.push('close');
+			this.readyState = WebSocket.CLOSED;
+		},
+	};
+	const remoteSocket = {
+		readable: new ReadableStream({
+			start(controller) {
+				controller.error(new Error('read failed'));
+			}
+		}),
+		close() {
+			事件.push('remote-close');
+		},
+	};
+
+	await connectStreams(remoteSocket, webSocket, null, null);
+
+	assert.deepEqual(事件, ['remote-close', 'close'], '读取失败必须关闭远端连接和 WebSocket 各一次');
+}
+
+{
+	const 事件 = [];
+	const webSocket = {
+		readyState: WebSocket.OPEN,
+		send() {
+			事件.push('send');
+		},
+		close() {
+			事件.push('close');
+			this.readyState = WebSocket.CLOSED;
+		},
+	};
+	const remoteSocket = {
+		readable: new ReadableStream({
+			start(controller) {
+				controller.close();
+			}
+		}),
+		close() {
+			事件.push('remote-close');
+		},
+	};
+
+	await connectStreams(remoteSocket, webSocket, null, async () => {
+		throw new Error('retry failed');
+	});
+
+	assert.deepEqual(事件, ['remote-close', 'close'], '重试失败必须关闭 WebSocket');
+}
