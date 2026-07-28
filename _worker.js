@@ -1,4 +1,4 @@
-const Version = '2.4.0';
+const Version = '2.4.1';
 let config_JSON, 缓存SOCKS5白名单 = null, 调试日志打印 = false;
 let SOCKS5白名单 = ['*tapecontent.net', '*cloudatacdn.com', '*loadshare.org', '*cdn-centaurus.com', 'scholar.google.com'];
 const Pages静态页面 = 'https://uxudjs.github.io/CGAX-Pages';
@@ -1197,18 +1197,30 @@ function 解码WS早期数据(header, token) {
 }
 
 ///////////////////////////////////////////////////////////////////////WS传输数据///////////////////////////////////////////////
+export function 启动WebSocket保活(webSocket, interval = 连接保活间隔毫秒, 设置定时器 = setInterval, 清除定时器 = clearInterval) {
+	let timer = null, 已停止 = false;
+	try {
+		timer = 设置定时器(() => {
+			try { if (!已停止 && webSocket.readyState === WebSocket.OPEN) webSocket.send(''); } catch (e) { }
+		}, interval);
+	} catch (e) { }
+	return () => {
+		if (已停止) return;
+		已停止 = true;
+		if (timer !== null) {
+			try { 清除定时器(timer) } catch (e) { }
+			timer = null;
+		}
+	};
+}
+
 async function 处理WS请求(request, yourUUID, url, 反代上下文 = {}) {
 	const WS套接字对 = new WebSocketPair();
 	const [clientSock, serverSock] = Object.values(WS套接字对);
 	try { (/** @type {any} */ (serverSock)).accept({ allowHalfOpen: true }) }
 	catch (_) { serverSock.accept() }
 	serverSock.binaryType = 'arraybuffer';
-	let WS保活定时器 = null;
-	try {
-		WS保活定时器 = setInterval(() => {
-			try { if (serverSock.readyState === WebSocket.OPEN) serverSock.send(''); } catch (e) { }
-		}, 连接保活间隔毫秒);
-	} catch (e) { }
+	const 停止WS保活 = 启动WebSocket保活(serverSock);
 	let remoteConnWrapper = { socket: null, connectingPromise: null, retryConnect: null };
 	let isDnsQuery = false;
 	let 判断是否是木马 = null;
@@ -1566,7 +1578,7 @@ async function 处理WS请求(request, yourUUID, url, 反代上下文 = {}) {
 		WS显式传输停止接收 = true;
 		WS显式队列字节 = 0;
 		WS显式队列条目 = 0;
-		if (WS保活定时器) { try { clearInterval(WS保活定时器); } catch (e) { } WS保活定时器 = null; }
+		停止WS保活();
 		const msg = err?.message || `${err}`;
 		if (msg.includes('Network connection lost') || msg.includes('ReadableStream is closed')) {
 			log(`[WS转发] 连接结束: ${msg}`);
@@ -1619,7 +1631,7 @@ async function 处理WS请求(request, yourUUID, url, 反代上下文 = {}) {
 		入队WS显式传输(event.data);
 	});
 	serverSock.addEventListener('close', () => {
-		if (WS保活定时器) { try { clearInterval(WS保活定时器); } catch (e) { } WS保活定时器 = null; }
+		停止WS保活();
 		closeSocketQuietly(serverSock);
 		收尾WS显式传输();
 	});
@@ -2019,6 +2031,46 @@ async function SSAEAD解密(cryptoKey, nonceCounter, ciphertext) {
 	return new Uint8Array(pt);
 }
 
+export const 直连建立超时毫秒 = 1000;
+
+export async function 打开TCP连接并等待(TCP连接, address, port, timeoutMs = 直连建立超时毫秒, 设置定时器 = setTimeout) {
+	const remoteSock = TCP连接({ hostname: address, port });
+	try {
+		await Promise.race([
+			remoteSock.opened,
+			new Promise((_, reject) => 设置定时器(() => reject(new Error('连接超时')), timeoutMs))
+		]);
+		return remoteSock;
+	} catch (err) {
+		try { remoteSock?.close?.() } catch (e) { }
+		throw err;
+	}
+}
+
+export async function 并发选择已打开连接(attempts) {
+	let winner = null;
+	try {
+		winner = await Promise.any(attempts);
+		return winner;
+	} finally {
+		if (winner) {
+			for (const attempt of attempts) {
+				attempt.then(({ socket }) => {
+					if (socket !== winner.socket) {
+						try { socket?.close?.() } catch (e) { }
+					}
+				}).catch(() => { });
+			}
+		}
+	}
+}
+
+export async function 等待进行中连接(remoteConnWrapper) {
+	if (!remoteConnWrapper.connectingPromise) return false;
+	await remoteConnWrapper.connectingPromise;
+	return true;
+}
+
 async function forwardataTCP(host, portNum, rawData, ws, respHeader, remoteConnWrapper, yourUUID, request = null, 反代上下文 = {}, 允许木马反代 = false, 木马反代首包数据 = null) {
 	const ctx反代IP = 反代上下文.反代IP || '';
 	const ctx代理类型 = 反代上下文.代理类型 !== undefined ? 反代上下文.代理类型 : null;
@@ -2027,29 +2079,14 @@ async function forwardataTCP(host, portNum, rawData, ws, respHeader, remoteConnW
 	const ctx反代兜底 = 反代上下文.反代兜底 !== undefined ? 反代上下文.反代兜底 : true;
 	let 反代数组索引 = 0;
 	log(`[TCP转发] 目标: ${host}:${portNum} | 反代IP: ${ctx反代IP} | 反代兜底: ${ctx反代兜底 ? '是' : '否'} | 反代类型: ${ctx代理类型 || 'proxyip'} | 全局: ${ctx代理全局 ? '是' : '否'}`);
-	const 连接超时毫秒 = 1000;
 	let 已通过代理发送首包 = false;
 	const TCP连接 = 创建请求TCP连接器(request);
 	const 使用木马反代 = 允许木马反代 && (反代上下文.木马反代地址 || null);
 	const 木马反代目标 = 使用木马反代 ? 反代上下文.木马反代地址 : null;
 	const 木马反代握手数据 = 使用木马反代 ? 提取木马反代握手数据(木马反代首包数据, rawData) : null;
 
-	async function 等待连接建立(remoteSock, timeoutMs = 连接超时毫秒) {
-		await Promise.race([
-			remoteSock.opened,
-			new Promise((_, reject) => setTimeout(() => reject(new Error('连接超时')), timeoutMs))
-		]);
-	}
-
 	async function 打开TCP连接(address, port) {
-		const remoteSock = TCP连接({ hostname: address, port });
-		try {
-			await 等待连接建立(remoteSock);
-			return remoteSock;
-		} catch (err) {
-			try { remoteSock?.close?.() } catch (e) { }
-			throw err;
-		}
+		return 打开TCP连接并等待(TCP连接, address, port);
 	}
 
 	async function 写入首包(remoteSock, data) {
@@ -2065,21 +2102,7 @@ async function forwardataTCP(host, portNum, rawData, ws, respHeader, remoteConnW
 			return { socket: await 打开TCP连接(候选.hostname, 候选.port), candidate: 候选 };
 		}
 		const attempts = 候选列表.map(候选 => 打开TCP连接(候选.hostname, 候选.port).then(socket => ({ socket, candidate: 候选 })));
-		let winner = null;
-		try {
-			winner = await Promise.any(attempts);
-			return winner;
-		} finally {
-			if (winner) {
-				for (const attempt of attempts) {
-					attempt.then(({ socket }) => {
-						if (socket !== winner.socket) {
-							try { socket?.close?.() } catch (e) { }
-						}
-					}).catch(() => { });
-				}
-			}
-		}
+		return 并发选择已打开连接(attempts);
 	}
 
 	async function 构建预加载竞速候选列表(address, port) {
@@ -2171,10 +2194,7 @@ async function forwardataTCP(host, portNum, rawData, ws, respHeader, remoteConnW
 	}
 
 	async function connecttoPry(允许发送首包 = true) {
-		if (remoteConnWrapper.connectingPromise) {
-			await remoteConnWrapper.connectingPromise;
-			return;
-		}
+		if (await 等待进行中连接(remoteConnWrapper)) return;
 
 		let 本次发送首包 = false, 本次首包数据 = null;
 		if (使用木马反代) {
@@ -2228,7 +2248,7 @@ async function forwardataTCP(host, portNum, rawData, ws, respHeader, remoteConnW
 			}
 			if (本次发送首包) 已通过代理发送首包 = true;
 			remoteConnWrapper.socket = newSocket;
-			connectStreams(newSocket, ws, respHeader, null);
+			connectStreams(newSocket, ws, respHeader, null, 使用木马反代 ? 'trojan' : (ctx代理类型 || 'direct'));
 		})();
 
 		remoteConnWrapper.connectingPromise = 当前连接任务;
@@ -2247,7 +2267,14 @@ async function forwardataTCP(host, portNum, rawData, ws, respHeader, remoteConnW
 		try {
 			await connecttoPry();
 		} catch (err) {
-			log(`[TCP转发] SOCKS5/HTTP/HTTPS/TURN/SSTP 代理连接失败: ${err.message}`);
+			记录断流诊断({
+				stage: 'connect',
+				transport: 使用木马反代 ? 'trojan' : (ctx代理类型 || 'unknown'),
+				hasData: false,
+				error: err,
+				closeReason: 'connect-failed',
+			});
+			log('[TCP转发] 链式代理连接失败');
 			throw err;
 		}
 	} else {
@@ -2258,7 +2285,7 @@ async function forwardataTCP(host, portNum, rawData, ws, respHeader, remoteConnW
 			connectStreams(initialSocket, ws, respHeader, async () => {
 				if (remoteConnWrapper.socket !== initialSocket) return;
 				await connecttoPry();
-			});
+			}, 'direct');
 		} catch (err) {
 			log(`[TCP转发] 直连 ${host}:${portNum} 失败: ${err.message}`);
 			if (err instanceof Error && err.name === '预加载解析为空') {
@@ -2617,8 +2644,30 @@ function 创建下行Grain发送器(webSocket, headerData = null) {
 	};
 }
 
-async function connectStreams(remoteSocket, webSocket, headerData, retryFunc) {
-	let header = headerData, hasData = false, reader, useBYOB = false, streamError = null;
+const 断流诊断阶段 = new Set(['connect', 'read', 'tls', 'send', 'flush', 'eof']);
+const 断流诊断传输 = new Set(['direct', 'http', 'https', 'socks5', 'turn', 'sstp', 'trojan', 'websocket', 'grpc', 'xhttp', 'unknown']);
+const 断流诊断错误名 = new Set(['Error', 'TypeError', 'RangeError', 'AbortError', 'TimeoutError', 'NetworkError', 'InvalidStateError']);
+const 断流诊断关闭原因 = new Set(['connect-failed', 'read-failed', 'tls-failed', 'send-failed', 'flush-failed', 'remote-eof', 'retry-failed', 'unspecified']);
+
+function 构建断流诊断({ stage, transport, hasData = false, error = null, closeReason = 'unspecified' } = {}) {
+	const errorName = typeof error?.name === 'string' && 断流诊断错误名.has(error.name) ? error.name : (error ? 'Error' : '');
+	return {
+		stage: 断流诊断阶段.has(stage) ? stage : 'connect',
+		transport: 断流诊断传输.has(transport) ? transport : 'unknown',
+		hasData: Boolean(hasData),
+		errorName,
+		closeReason: 断流诊断关闭原因.has(closeReason) ? closeReason : 'unspecified',
+	};
+}
+
+function 记录断流诊断(context) {
+	const 诊断 = 构建断流诊断(context);
+	log(`[断流诊断] ${JSON.stringify(诊断)}`);
+	return 诊断;
+}
+
+async function connectStreams(remoteSocket, webSocket, headerData, retryFunc, transport = 'unknown', 诊断回调 = 记录断流诊断) {
+	let header = headerData, hasData = false, reader, useBYOB = false, streamError = null, streamStage = 'read';
 	const BYOB单次读取上限 = 64 * 1024;
 	const 下行发送器 = 创建下行Grain发送器(webSocket, header);
 	header = null;
@@ -2629,33 +2678,47 @@ async function connectStreams(remoteSocket, webSocket, headerData, retryFunc) {
 	try {
 		if (!useBYOB) {
 			while (true) {
+				streamStage = 'read';
 				const { done, value } = await reader.read();
 				if (done) break;
 				if (!value || value.byteLength === 0) continue;
 				hasData = true;
+				streamStage = 'send';
 				await 下行发送器.发送(value);
 			}
 		} else {
 			let readBuffer = new ArrayBuffer(BYOB单次读取上限);
 			while (true) {
+				streamStage = 'read';
 				const { done, value } = await reader.read(new Uint8Array(readBuffer, 0, BYOB单次读取上限));
 				if (done) break;
 				if (!value || value.byteLength === 0) continue;
 				hasData = true;
 				if (value.byteLength >= 下行Grain包字节) {
+					streamStage = 'flush';
 					await 下行发送器.flush();
+					streamStage = 'send';
 					await 下行发送器.直接发送(value);
 					readBuffer = new ArrayBuffer(BYOB单次读取上限);
 				} else {
+					streamStage = 'send';
 					await 下行发送器.发送(value);
 					readBuffer = value.buffer.byteLength >= BYOB单次读取上限 ? value.buffer : new ArrayBuffer(BYOB单次读取上限);
 				}
 			}
 		}
+		streamStage = 'flush';
 		await 下行发送器.flush();
 	} catch (err) { streamError = err }
 	finally { try { await reader.cancel() } catch (e) { } try { reader.releaseLock() } catch (e) { } }
 	if (streamError) {
+		诊断回调({
+			stage: streamStage,
+			transport,
+			hasData,
+			error: streamError,
+			closeReason: `${streamStage}-failed`,
+		});
 		try { remoteSocket.close?.() } catch (e) { }
 		closeSocketQuietly(webSocket);
 		return;
@@ -2666,10 +2729,12 @@ async function connectStreams(remoteSocket, webSocket, headerData, retryFunc) {
 			await retryFunc();
 			return;
 		} catch (err) {
+			诊断回调({ stage: 'connect', transport, hasData, error: err, closeReason: 'retry-failed' });
 			closeSocketQuietly(webSocket);
 			return;
 		}
 	}
+	诊断回调({ stage: 'eof', transport, hasData, closeReason: 'remote-eof' });
 	closeSocketQuietly(webSocket);
 }
 
@@ -2772,23 +2837,30 @@ async function socks5Connect(targetHost, targetPort, initialData, TCP连接, par
 	}
 }
 
-async function httpConnect(targetHost, targetPort, initialData, HTTPS代理 = false, TCP连接, parsedSocks5) {
+async function httpConnect(targetHost, targetPort, initialData, HTTPS代理 = false, TCP连接, parsedSocks5, 诊断回调 = 记录断流诊断) {
 	const { username, password, hostname, port } = parsedSocks5 || {};
-	const socket = HTTPS代理
-		? TCP连接({ hostname, port }, { secureTransport: 'on', allowHalfOpen: false })
-		: TCP连接({ hostname, port });
-	const writer = socket.writable.getWriter(), reader = socket.readable.getReader();
 	const encoder = new TextEncoder();
 	const decoder = new TextDecoder();
+	let socket = null, writer = null, reader = null, 诊断阶段 = 'connect', hasData = false;
 	try {
-		if (HTTPS代理) await socket.opened;
+		socket = HTTPS代理
+			? TCP连接({ hostname, port }, { secureTransport: 'on', allowHalfOpen: false })
+			: TCP连接({ hostname, port });
+		writer = socket.writable.getWriter();
+		reader = socket.readable.getReader();
+		if (HTTPS代理) {
+			诊断阶段 = 'tls';
+			await socket.opened;
+		}
 
 		const auth = username && password ? `Proxy-Authorization: Basic ${btoa(`${username}:${password}`)}\r\n` : '';
 		const request = `CONNECT ${targetHost}:${targetPort} HTTP/1.1\r\nHost: ${targetHost}:${targetPort}\r\n${auth}User-Agent: Mozilla/5.0\r\nConnection: keep-alive\r\n\r\n`;
+		诊断阶段 = 'send';
 		await writer.write(encoder.encode(request));
 		writer.releaseLock();
 
 		let responseBuffer = new Uint8Array(0), headerEndIndex = -1, bytesRead = 0;
+		诊断阶段 = 'read';
 		while (headerEndIndex === -1 && bytesRead < 8192) {
 			const { done, value } = await reader.read();
 			if (done || !value) throw new Error(`${HTTPS代理 ? 'HTTPS' : 'HTTP'} 代理在返回 CONNECT 响应前关闭连接`);
@@ -2807,39 +2879,82 @@ async function httpConnect(targetHost, targetPort, initialData, HTTPS代理 = fa
 
 		if (有效数据长度(initialData) > 0) {
 			const 远端写入器 = socket.writable.getWriter();
-			await 远端写入器.write(initialData);
-			远端写入器.releaseLock();
+			try {
+				诊断阶段 = 'send';
+				await 远端写入器.write(initialData);
+			} finally {
+				try { 远端写入器.releaseLock() } catch (e) { }
+			}
 		}
 
-		// CONNECT 响应头后可能夹带隧道数据，先回灌到可读流，避免首包被吞。
+		// CONNECT 响应头后可能夹带隧道数据，先同步入队，再按需读取后续数据。
 		if (bytesRead > headerEndIndex) {
-			const { readable, writable } = new TransformStream();
-			const transformWriter = writable.getWriter();
-			await transformWriter.write(responseBuffer.subarray(headerEndIndex, bytesRead));
-			transformWriter.releaseLock();
-			socket.readable.pipeTo(writable).catch(() => { });
+			hasData = true;
+			const 隧道Reader = socket.readable.getReader();
+			let reader已释放 = false;
+			const 释放Reader = () => {
+				if (reader已释放) return;
+				reader已释放 = true;
+				try { 隧道Reader.releaseLock() } catch (e) { }
+			};
+			const readable = new ReadableStream({
+				start(controller) {
+					controller.enqueue(responseBuffer.slice(headerEndIndex, bytesRead));
+				},
+				async pull(controller) {
+					try {
+						const { done, value } = await 隧道Reader.read();
+						if (done) {
+							释放Reader();
+							controller.close();
+							return;
+						}
+						if (value?.byteLength) controller.enqueue(value);
+					} catch (error) {
+						释放Reader();
+						try { socket.close() } catch (e) { }
+						controller.error(error);
+					}
+				},
+				async cancel(reason) {
+					try { await 隧道Reader.cancel(reason) }
+					finally {
+						释放Reader();
+						try { socket.close() } catch (e) { }
+					}
+				}
+			});
 			return { readable, writable: socket.writable, closed: socket.closed, close: () => socket.close() };
 		}
 
 		return socket;
 	} catch (error) {
-		try { writer.releaseLock() } catch (e) { }
-		try { reader.releaseLock() } catch (e) { }
-		try { socket.close() } catch (e) { }
+		诊断回调({
+			stage: 诊断阶段,
+			transport: HTTPS代理 ? 'https' : 'http',
+			hasData,
+			error,
+			closeReason: `${诊断阶段}-failed`,
+		});
+		try { writer?.releaseLock() } catch (e) { }
+		try { reader?.releaseLock() } catch (e) { }
+		try { socket?.close() } catch (e) { }
 		throw error;
 	}
 }
 
-async function httpsConnect(targetHost, targetPort, initialData, TCP连接, parsedSocks5) {
+async function httpsConnect(targetHost, targetPort, initialData, TCP连接, parsedSocks5, 诊断回调 = 记录断流诊断) {
 	const { username, password, hostname, port } = parsedSocks5 || {};
 	const encoder = new TextEncoder();
 	const decoder = new TextDecoder();
-	let tlsSocket = null;
+	let tlsSocket = null, 诊断阶段 = 'connect', hasData = false;
 	const tlsServerName = isIPHostname(hostname) ? '' : stripIPv6Brackets(hostname);
 	const 打开HTTPS代理TLS = async (allowChacha = false) => {
+		诊断阶段 = 'connect';
 		const proxySocket = TCP连接({ hostname, port });
 		try {
 			await proxySocket.opened;
+			诊断阶段 = 'tls';
 			const socket = new TlsClient(proxySocket, { serverName: tlsServerName, insecure: true, allowChacha });
 			await socket.handshake();
 			log(`[HTTPS代理] TLS版本: ${socket.isTls13 ? '1.3' : '1.2'} | Cipher: 0x${socket.cipherSuite.toString(16)}${socket.cipherConfig?.chacha ? ' (ChaCha20)' : ' (AES-GCM)'}`);
@@ -2854,15 +2969,17 @@ async function httpsConnect(targetHost, targetPort, initialData, TCP连接, pars
 			tlsSocket = await 打开HTTPS代理TLS(false);
 		} catch (error) {
 			if (!/cipher|handshake|TLS Alert|ServerHello|Finished|Unsupported|Missing TLS/i.test(error?.message || `${error || ''}`)) throw error;
-			log(`[HTTPS代理] AES-GCM TLS 握手失败，回退 ChaCha20 兼容模式: ${error?.message || error}`);
+			log('[HTTPS代理] AES-GCM TLS 握手失败，回退 ChaCha20 兼容模式');
 			tlsSocket = await 打开HTTPS代理TLS(true);
 		}
 
 		const auth = username && password ? `Proxy-Authorization: Basic ${btoa(`${username}:${password}`)}\r\n` : '';
 		const request = `CONNECT ${targetHost}:${targetPort} HTTP/1.1\r\nHost: ${targetHost}:${targetPort}\r\n${auth}User-Agent: Mozilla/5.0\r\nConnection: keep-alive\r\n\r\n`;
+		诊断阶段 = 'send';
 		await tlsSocket.write(encoder.encode(request));
 
 		let responseBuffer = new Uint8Array(0), headerEndIndex = -1, bytesRead = 0;
+		诊断阶段 = 'read';
 		while (headerEndIndex === -1 && bytesRead < 8192) {
 			const value = await tlsSocket.read();
 			if (!value) throw new Error('HTTPS 代理在返回 CONNECT 响应前关闭连接');
@@ -2877,8 +2994,12 @@ async function httpsConnect(targetHost, targetPort, initialData, TCP连接, pars
 		const statusCode = statusMatch ? parseInt(statusMatch[1], 10) : NaN;
 		if (!Number.isFinite(statusCode) || statusCode < 200 || statusCode >= 300) throw new Error(`Connection failed: HTTP ${statusCode}`);
 
-		if (有效数据长度(initialData) > 0) await tlsSocket.write(数据转Uint8Array(initialData));
+		if (有效数据长度(initialData) > 0) {
+			诊断阶段 = 'send';
+			await tlsSocket.write(数据转Uint8Array(initialData));
+		}
 		const bufferedData = bytesRead > headerEndIndex ? responseBuffer.subarray(headerEndIndex, bytesRead) : null;
+		hasData = 有效数据长度(bufferedData) > 0;
 		let closedSettled = false, resolveClosed, rejectClosed;
 		const settleClosed = (settle, value) => {
 			if (!closedSettled) {
@@ -2901,11 +3022,15 @@ async function httpsConnect(targetHost, targetPort, initialData, TCP连接, pars
 					while (true) {
 						const data = await tlsSocket.read();
 						if (!data) break;
-						if (data.byteLength > 0) controller.enqueue(data);
+						if (data.byteLength > 0) {
+							hasData = true;
+							controller.enqueue(data);
+						}
 					}
 					try { controller.close() } catch (e) { }
 					settleClosed(resolveClosed);
 				} catch (error) {
+					诊断回调({ stage: 'read', transport: 'https', hasData, error, closeReason: 'read-failed' });
 					try { controller.error(error) } catch (e) { }
 					settleClosed(rejectClosed, error);
 				}
@@ -2916,7 +3041,12 @@ async function httpsConnect(targetHost, targetPort, initialData, TCP连接, pars
 		});
 		const writable = new WritableStream({
 			async write(chunk) {
-				await tlsSocket.write(数据转Uint8Array(chunk));
+				try {
+					await tlsSocket.write(数据转Uint8Array(chunk));
+				} catch (error) {
+					诊断回调({ stage: 'send', transport: 'https', hasData, error, closeReason: 'send-failed' });
+					throw error;
+				}
 			},
 			close,
 			abort(error) {
@@ -2926,6 +3056,13 @@ async function httpsConnect(targetHost, targetPort, initialData, TCP连接, pars
 		});
 		return { readable, writable, closed, close };
 	} catch (error) {
+		诊断回调({
+			stage: 诊断阶段,
+			transport: 'https',
+			hasData,
+			error,
+			closeReason: `${诊断阶段}-failed`,
+		});
 		try { tlsSocket?.close() } catch (e) { }
 		throw error;
 	}

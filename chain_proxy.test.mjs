@@ -16,8 +16,8 @@ Object.defineProperty(crypto.subtle, 'digest', {
 });
 
 const source = await readFile(new URL('./_worker.js', import.meta.url), 'utf8');
-const moduleUrl = `data:text/javascript;base64,${Buffer.from(`${source}\nexport { 追加API备注, base64SecretEncode, 读取config_JSON, 反代参数获取, socks5Connect, connectStreams };`).toString('base64')}`;
-const { default: worker, 追加API备注, base64SecretEncode, 读取config_JSON, 反代参数获取, socks5Connect, connectStreams } = await import(moduleUrl);
+const moduleUrl = `data:text/javascript;base64,${Buffer.from(`${source}\nexport { 追加API备注, base64SecretEncode, 读取config_JSON, 反代参数获取, socks5Connect, httpConnect, connectStreams, 构建断流诊断 };`).toString('base64')}`;
+const { default: worker, 追加API备注, base64SecretEncode, 读取config_JSON, 反代参数获取, socks5Connect, httpConnect, connectStreams, 构建断流诊断 } = await import(moduleUrl);
 
 {
 	const request = new Request('https://worker.example/version?uuid=11111111-1111-4111-8111-111111111111');
@@ -28,7 +28,7 @@ const { default: worker, 追加API备注, base64SecretEncode, 读取config_JSON,
 		{ waitUntil() { } },
 	);
 	assert.equal(response.status, 200);
-	assert.deepEqual(await response.json(), { Version: '2.4.0' });
+	assert.deepEqual(await response.json(), { Version: '2.4.1' });
 }
 
 {
@@ -168,6 +168,401 @@ function 创建模拟TCP连接(响应块) {
 	};
 	return { socket, 写入, get 已关闭() { return 已关闭 } };
 }
+
+function 创建CONNECT模拟TCP连接(响应块, { 打开门 = Promise.resolve(), 写入错误 = null, 读取错误 = null, 保持打开 = false } = {}) {
+	const 写入 = [];
+	const 连接参数 = [];
+	let 已关闭 = false, 已取消 = false, 可写流关闭 = false;
+	let 响应索引 = 0;
+	const socket = {
+		opened: 打开门,
+		readable: new ReadableStream({
+			pull(controller) {
+				if (响应索引 < 响应块.length) {
+					controller.enqueue(new Uint8Array(响应块[响应索引++]));
+				} else if (读取错误) {
+					controller.error(读取错误);
+				} else if (!保持打开) {
+					controller.close();
+				} else {
+					return new Promise(() => { });
+				}
+			},
+			cancel() {
+				已取消 = true;
+			},
+		}),
+		writable: new WritableStream({
+			write(chunk) {
+				if (写入错误) throw 写入错误;
+				写入.push(new Uint8Array(chunk));
+			},
+			close() {
+				可写流关闭 = true;
+			},
+		}),
+		closed: Promise.resolve(),
+		close() {
+			已关闭 = true;
+		},
+	};
+	const TCP连接 = (...args) => {
+		连接参数.push(args);
+		return socket;
+	};
+	return {
+		socket,
+		TCP连接,
+		写入,
+		连接参数,
+		get 已关闭() { return 已关闭 },
+		get 已取消() { return 已取消 },
+		get 可写流关闭() { return 可写流关闭 },
+	};
+}
+
+async function 有界等待(promise, message) {
+	let timer;
+	try {
+		return await Promise.race([
+			promise,
+			new Promise((_, reject) => {
+				timer = setTimeout(() => reject(new Error(message)), 100);
+			}),
+		]);
+	} finally {
+		clearTimeout(timer);
+	}
+}
+
+for (const HTTPS代理 of [false, true]) {
+	test(`${HTTPS代理 ? 'HTTPS' : 'HTTP'} CONNECT 同读首包按序且恰好一次`, async () => {
+		const 首包 = [0xde, 0xad];
+		const 后续包 = [0xbe, 0xef];
+		const 模拟连接 = 创建CONNECT模拟TCP连接([
+			[...new TextEncoder().encode('HTTP/1.1 200 Connection Established\r\n\r\n'), ...首包],
+			后续包,
+		]);
+
+		const socket = await 有界等待(
+			httpConnect(
+				'example.com',
+				443,
+				null,
+				HTTPS代理,
+				模拟连接.TCP连接,
+				{ hostname: 'proxy.example', port: 8443 },
+			),
+			`${HTTPS代理 ? 'HTTPS' : 'HTTP'} CONNECT 返回前被首包写入阻塞`,
+		);
+		const reader = socket.readable.getReader();
+		const 收到 = [];
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) break;
+			收到.push(...value);
+		}
+
+		assert.deepEqual(收到, [...首包, ...后续包]);
+		assert.equal(模拟连接.已关闭, false);
+	});
+}
+
+test('HTTPS CONNECT 等待 opened 并保持原生 TLS 连接参数', async () => {
+	let 允许打开;
+	const 打开门 = new Promise(resolve => { 允许打开 = resolve });
+	const 模拟连接 = 创建CONNECT模拟TCP连接([
+		[...new TextEncoder().encode('HTTP/1.1 200 Connection Established\r\n\r\n')],
+	], { 打开门 });
+
+	const 连接任务 = httpConnect(
+		'example.com',
+		443,
+		null,
+		true,
+		模拟连接.TCP连接,
+		{ hostname: 'proxy.example', port: 8443 },
+	);
+	await Promise.resolve();
+	assert.equal(模拟连接.写入.length, 0, 'opened 完成前不得发送 CONNECT');
+	assert.deepEqual(模拟连接.连接参数, [
+		[{ hostname: 'proxy.example', port: 8443 }, { secureTransport: 'on', allowHalfOpen: false }],
+	]);
+	允许打开();
+	await 连接任务;
+	assert.equal(模拟连接.写入.length, 1);
+});
+
+test('HTTP CONNECT 无同读首包时保持原始 socket 接口', async () => {
+	const 模拟连接 = 创建CONNECT模拟TCP连接([
+		[...new TextEncoder().encode('HTTP/1.1 200 Connection Established\r\n\r\n')],
+	]);
+	const socket = await httpConnect(
+		'example.com',
+		443,
+		null,
+		false,
+		模拟连接.TCP连接,
+		{ hostname: 'proxy.example', port: 8080 },
+	);
+
+	assert.equal(socket, 模拟连接.socket);
+	assert.equal(socket.readable.locked, false);
+	assert.equal(socket.writable.locked, false);
+});
+
+test('HTTP CONNECT 同读首包下游取消时释放 reader 并关闭 socket', async () => {
+	const 模拟连接 = 创建CONNECT模拟TCP连接([
+		[...new TextEncoder().encode('HTTP/1.1 200 Connection Established\r\n\r\n'), 0xde, 0xad],
+	], { 保持打开: true });
+	const socket = await httpConnect(
+		'example.com',
+		443,
+		null,
+		false,
+		模拟连接.TCP连接,
+		{ hostname: 'proxy.example', port: 8080 },
+	);
+	const reader = socket.readable.getReader();
+	assert.deepEqual([...(await reader.read()).value], [0xde, 0xad]);
+	await reader.cancel('downstream cancelled');
+
+	assert.equal(模拟连接.已取消, true);
+	assert.equal(模拟连接.socket.readable.locked, false);
+	assert.equal(模拟连接.已关闭, true);
+});
+
+test('HTTP CONNECT 同读首包后读取失败时释放 reader 并关闭 socket', async () => {
+	const 模拟连接 = 创建CONNECT模拟TCP连接([
+		[...new TextEncoder().encode('HTTP/1.1 200 Connection Established\r\n\r\n'), 0xde, 0xad],
+	], { 读取错误: new Error('read failed') });
+	const socket = await httpConnect(
+		'example.com',
+		443,
+		null,
+		false,
+		模拟连接.TCP连接,
+		{ hostname: 'proxy.example', port: 8080 },
+	);
+	const reader = socket.readable.getReader();
+	assert.deepEqual([...(await reader.read()).value], [0xde, 0xad]);
+	await assert.rejects(reader.read(), /read failed/);
+
+	assert.equal(模拟连接.socket.readable.locked, false);
+	assert.equal(模拟连接.已关闭, true);
+});
+
+test('HTTP CONNECT initialData 写入失败时释放 writer 并关闭 socket', async () => {
+	const 模拟连接 = 创建CONNECT模拟TCP连接([
+		[...new TextEncoder().encode('HTTP/1.1 200 Connection Established\r\n\r\n')],
+	], { 写入错误: new Error('write failed') });
+
+	await assert.rejects(
+		httpConnect(
+			'example.com',
+			443,
+			new Uint8Array([0xaa]),
+			false,
+			模拟连接.TCP连接,
+			{ hostname: 'proxy.example', port: 8080 },
+		),
+		/write failed/,
+	);
+	assert.equal(模拟连接.socket.writable.locked, false);
+	assert.equal(模拟连接.socket.readable.locked, false);
+	assert.equal(模拟连接.已关闭, true);
+});
+
+for (const stage of ['connect', 'read', 'tls', 'send', 'flush', 'eof']) {
+	test(`断流诊断 ${stage} 阶段只保留白名单字段`, () => {
+		const error = new Error('Authorization: Bearer secret-token https://target.example/private?uuid=secret');
+		error.name = 'secret-error-name';
+		const 诊断 = 构建断流诊断({
+			stage,
+			transport: 'https://user:password@proxy.example',
+			hasData: stage !== 'connect',
+			error,
+			closeReason: 'Cookie=session-secret',
+			target: 'target.example',
+			authorization: 'Bearer secret-token',
+		});
+
+		assert.deepEqual(Object.keys(诊断), ['stage', 'transport', 'hasData', 'errorName', 'closeReason']);
+		assert.equal(诊断.stage, stage);
+		assert.equal(诊断.transport, 'unknown');
+		assert.equal(诊断.errorName, 'Error');
+		assert.equal(诊断.closeReason, 'unspecified');
+		for (const sensitive of ['secret-token', 'target.example', 'password', 'Cookie', 'Authorization']) {
+			assert.ok(!JSON.stringify(诊断).includes(sensitive));
+		}
+	});
+}
+
+test('HTTP CONNECT 建连失败记录 connect 阶段', async () => {
+	const 诊断列表 = [];
+	await assert.rejects(
+		httpConnect(
+			'private.example',
+			443,
+			null,
+			false,
+			() => { throw new TypeError('proxy password leaked') },
+			{ hostname: 'proxy.example', port: 8080 },
+			诊断 => 诊断列表.push(构建断流诊断(诊断)),
+		),
+		/proxy password leaked/,
+	);
+	assert.deepEqual(诊断列表, [{
+		stage: 'connect',
+		transport: 'http',
+		hasData: false,
+		errorName: 'TypeError',
+		closeReason: 'connect-failed',
+	}]);
+});
+
+test('HTTPS CONNECT 打开失败记录 tls 阶段', async () => {
+	const 诊断列表 = [];
+	const 模拟连接 = 创建CONNECT模拟TCP连接([], {
+		打开门: Promise.reject(new Error('TLS credentials leaked')),
+	});
+	await assert.rejects(
+		httpConnect(
+			'private.example',
+			443,
+			null,
+			true,
+			模拟连接.TCP连接,
+			{ hostname: 'proxy.example', port: 8443 },
+			诊断 => 诊断列表.push(构建断流诊断(诊断)),
+		),
+		/TLS credentials leaked/,
+	);
+	assert.deepEqual(诊断列表, [{
+		stage: 'tls',
+		transport: 'https',
+		hasData: false,
+		errorName: 'Error',
+		closeReason: 'tls-failed',
+	}]);
+});
+
+test('connectStreams 读取失败记录 read 阶段', async () => {
+	const 诊断列表 = [];
+	const remoteSocket = {
+		readable: new ReadableStream({
+			start(controller) {
+				controller.error(new Error('Cookie=session-secret'));
+			},
+		}),
+		close() { },
+	};
+	const webSocket = {
+		readyState: WebSocket.OPEN,
+		send() { },
+		close() {
+			this.readyState = WebSocket.CLOSED;
+		},
+	};
+
+	await connectStreams(remoteSocket, webSocket, null, null, 'http', 诊断 => 诊断列表.push(构建断流诊断(诊断)));
+	assert.deepEqual(诊断列表, [{
+		stage: 'read',
+		transport: 'http',
+		hasData: false,
+		errorName: 'Error',
+		closeReason: 'read-failed',
+	}]);
+});
+
+test('connectStreams 直接发送失败记录 send 阶段', async () => {
+	const 诊断列表 = [];
+	const remoteSocket = {
+		readable: new ReadableStream({
+			start(controller) {
+				controller.enqueue(new Uint8Array(32 * 1024));
+				controller.close();
+			},
+		}),
+		close() { },
+	};
+	const webSocket = {
+		readyState: WebSocket.OPEN,
+		send() {
+			throw new Error('Authorization: secret');
+		},
+		close() {
+			this.readyState = WebSocket.CLOSED;
+		},
+	};
+
+	await connectStreams(remoteSocket, webSocket, null, null, 'socks5', 诊断 => 诊断列表.push(构建断流诊断(诊断)));
+	assert.deepEqual(诊断列表, [{
+		stage: 'send',
+		transport: 'socks5',
+		hasData: true,
+		errorName: 'Error',
+		closeReason: 'send-failed',
+	}]);
+});
+
+test('connectStreams 尾部发送失败记录 flush 阶段', async () => {
+	const 诊断列表 = [];
+	const remoteSocket = {
+		readable: new ReadableStream({
+			start(controller) {
+				controller.enqueue(new Uint8Array([0x01]));
+				controller.close();
+			},
+		}),
+		close() { },
+	};
+	const webSocket = {
+		readyState: WebSocket.OPEN,
+		send() {
+			throw new Error('target.example/private');
+		},
+		close() {
+			this.readyState = WebSocket.CLOSED;
+		},
+	};
+
+	await connectStreams(remoteSocket, webSocket, null, null, 'direct', 诊断 => 诊断列表.push(构建断流诊断(诊断)));
+	assert.deepEqual(诊断列表, [{
+		stage: 'flush',
+		transport: 'direct',
+		hasData: true,
+		errorName: 'Error',
+		closeReason: 'flush-failed',
+	}]);
+});
+
+test('connectStreams 正常结束记录 eof 阶段', async () => {
+	const 诊断列表 = [];
+	const remoteSocket = {
+		readable: new ReadableStream({
+			start(controller) {
+				controller.close();
+			},
+		}),
+	};
+	const webSocket = {
+		readyState: WebSocket.OPEN,
+		send() { },
+		close() {
+			this.readyState = WebSocket.CLOSED;
+		},
+	};
+
+	await connectStreams(remoteSocket, webSocket, null, null, 'direct', 诊断 => 诊断列表.push(构建断流诊断(诊断)));
+	assert.deepEqual(诊断列表, [{
+		stage: 'eof',
+		transport: 'direct',
+		hasData: false,
+		errorName: '',
+		closeReason: 'remote-eof',
+	}]);
+});
 
 {
 	const 模拟连接 = 创建模拟TCP连接([
