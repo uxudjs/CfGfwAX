@@ -1,4 +1,4 @@
-const Version = '2.3.0';
+const Version = '2.4.0';
 let config_JSON, 缓存SOCKS5白名单 = null, 调试日志打印 = false;
 let SOCKS5白名单 = ['*tapecontent.net', '*cloudatacdn.com', '*loadshare.org', '*cdn-centaurus.com', 'scholar.google.com'];
 const Pages静态页面 = 'https://uxudjs.github.io/CGAX-Pages';
@@ -8,6 +8,38 @@ const 上行合包目标字节 = 16 * 1024, 上行队列最大字节 = 16 * 1024
 const 下行Grain包字节 = 32 * 1024, 下行Grain尾部阈值 = 512, 下行Grain静默毫秒 = 0;
 let TCP并发拨号数 = 2, 反代并发拨号数 = 1, 预加载竞速拨号 = false;
 let 连接保活间隔毫秒 = 30000;
+
+export function 解析连接设置(env = {}, KV连接设置 = {}) {
+	const 有环境变量 = 名称 => Object.prototype.hasOwnProperty.call(env, 名称);
+	const 读取布尔值 = (环境变量名, 配置名, 默认值) => {
+		const 候选值 = 有环境变量(环境变量名) ? env[环境变量名] : KV连接设置[配置名];
+		if (候选值 === undefined) return 默认值;
+		return 候选值 === true || ['1', 'true'].includes(String(候选值).toLowerCase());
+	};
+	const 读取正整数 = (环境变量名, 配置名, 默认值, 最小值) => {
+		const 候选值 = 有环境变量(环境变量名) ? env[环境变量名] : KV连接设置[配置名];
+		const 数值 = Number(候选值);
+		return Number.isFinite(数值) ? Math.max(最小值, Math.floor(数值)) : 默认值;
+	};
+	return {
+		预加载竞速拨号: 读取布尔值('PRELOAD_RACE_DIAL', '预加载竞速拨号', false),
+		TCP并发拨号数: 读取正整数('TCP_CONCURRENT_DIAL', 'TCP并发拨号数', 2, 1),
+		反代并发拨号数: 读取正整数('PROXY_CONCURRENT_DIAL', '反代并发拨号数', 1, 1),
+		连接保活间隔毫秒: 读取正整数('KEEPALIVE_INTERVAL', '连接保活间隔毫秒', 30000, 1000)
+	};
+}
+
+async function 读取KV连接设置(env) {
+	if (!env.KV || typeof env.KV.get !== 'function') return {};
+	try {
+		const 配置文本 = await env.KV.get('config.json');
+		const 配置 = 配置文本 ? JSON.parse(配置文本) : {};
+		return 配置.连接设置 && typeof 配置.连接设置 === 'object' ? 配置.连接设置 : {};
+	} catch (error) {
+		console.error(`读取连接设置出错: ${error.message}`);
+		return {};
+	}
+}
 ///////////////////////////////////////////////////////查杀特征码///////////////////////////////////////////////
 const 特征码字典 = [
 	(Proxy.name + "IP").toUpperCase(),
@@ -37,11 +69,13 @@ export default {
 		const host = hosts[0];
 		const 访问路径 = url.pathname.slice(1).toLowerCase();
 		调试日志打印 = ['1', 'true'].includes(env.DEBUG) || 调试日志打印;
-		预加载竞速拨号 = ['1', 'true'].includes(env.PRELOAD_RACE_DIAL) || 预加载竞速拨号;
-		反代并发拨号数 = Math.max(1, Number(env.PROXY_CONCURRENT_DIAL) || 反代并发拨号数);
-		TCP并发拨号数 = Math.max(1, Number(env.TCP_CONCURRENT_DIAL) || TCP并发拨号数);
-		连接保活间隔毫秒 = Math.max(1000, Number(env.KEEPALIVE_INTERVAL) || 连接保活间隔毫秒);
-		if (!env.TCP_CONCURRENT_DIAL && TCP并发拨号数 !== 1 && 识别运营商(request) === 'cmcc') TCP并发拨号数 = 1;
+		const KV连接设置 = await 读取KV连接设置(env);
+		const 连接设置 = 解析连接设置(env, KV连接设置);
+		预加载竞速拨号 = 连接设置.预加载竞速拨号;
+		反代并发拨号数 = 连接设置.反代并发拨号数;
+		TCP并发拨号数 = 连接设置.TCP并发拨号数;
+		连接保活间隔毫秒 = 连接设置.连接保活间隔毫秒;
+		if (!Object.prototype.hasOwnProperty.call(env, 'TCP_CONCURRENT_DIAL') && KV连接设置.TCP并发拨号数 === undefined && TCP并发拨号数 !== 1 && 识别运营商(request) === 'cmcc') TCP并发拨号数 = 1;
 		let 默认反代IP = (`${request.cf.colo}.${特征码字典[0]}.${特征码字典[1]}SsSs.nEt`).toLowerCase(), 默认反代兜底 = true;
 		if (env.PROXYIP) {
 			const proxyIPs = await 整理成数组(env.PROXYIP);
@@ -5293,6 +5327,12 @@ async function 读取config_JSON(env, hostname, userID, UA = "Mozilla/5.0", 重�
 					标准: "sstp=" + 占位符
 				},
 			},
+		},
+		连接设置: {
+			预加载竞速拨号: false,
+			TCP并发拨号数: 2,
+			反代并发拨号数: 1,
+			连接保活间隔毫秒: 30000,
 		},
 		TG: {
 			启用: false,

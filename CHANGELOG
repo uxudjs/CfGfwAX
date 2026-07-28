@@ -1,4 +1,8 @@
-## [v2.3.0]
+## [v2.4.0]
+
+### Change
+
+- 新增管理页连接竞速与保活设置：预加载竞速拨号、TCP 并发拨号数、反代并发拨号数及 `KEEPALIVE_INTERVAL`。设置保存至 KV `config.json`，环境变量存在时优先。
 
 ### Debug
 

@@ -54,6 +54,9 @@
 | `PRELOAD_RACE_DIAL` | ❌ | `1` / `true` | 开启预加载竞速拨号 |
 | `TCP_CONCURRENT_DIAL` | ❌ | `2` | TCP 并发拨号数 |
 | `PROXY_CONCURRENT_DIAL` | ❌ | `1` | 反代并发拨号数 |
+| `KEEPALIVE_INTERVAL` | ❌ | `30000` | 连接保活间隔（毫秒，最小 `1000`） |
+
+> 管理页“Cloudflare CDN 访问设置”中的连接竞速与保活项会保存到 KV `config.json`，用作这些变量未设置时的回退值；环境变量存在时仍优先。
 
 ### 动态代理路径
 
@@ -118,6 +121,9 @@
 | `PRELOAD_RACE_DIAL` | ❌ | `1` / `true` | 開啟預載競速撥號 |
 | `TCP_CONCURRENT_DIAL` | ❌ | `2` | TCP 並行撥號數 |
 | `PROXY_CONCURRENT_DIAL` | ❌ | `1` | 反向代理並行撥號數 |
+| `KEEPALIVE_INTERVAL` | ❌ | `30000` | 連線保活間隔（毫秒，最小 `1000`） |
+
+> 管理頁「Cloudflare CDN 存取設定」中的連線競速與保活項會儲存到 KV `config.json`，作為這些變數未設定時的回退值；環境變數存在時仍優先。
 
 ### 動態代理路徑
 
@@ -182,6 +188,9 @@ Visit `https://your-domain/admin` and sign in with the `ADMIN` password. You can
 | `PRELOAD_RACE_DIAL` | ❌ | `1` / `true` | Enable preloaded racing dials |
 | `TCP_CONCURRENT_DIAL` | ❌ | `2` | Number of concurrent TCP dials |
 | `PROXY_CONCURRENT_DIAL` | ❌ | `1` | Number of concurrent reverse proxy dials |
+| `KEEPALIVE_INTERVAL` | ❌ | `30000` | Connection keepalive interval in milliseconds (minimum `1000`) |
+
+> The connection-racing and keepalive settings in the **Cloudflare CDN Access Settings** admin section are saved in KV `config.json` as fallbacks when these variables are unset. Environment variables continue to take precedence.
 
 ### Dynamic proxy paths
 
