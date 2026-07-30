@@ -42,7 +42,7 @@
 
 - `node --test xhttp_stream_benchmark.test.mjs`
 - 连续两次严格 all-profile 基准；结果保存到 `work-products/debug/`。
-- `node --check xhttp_stream_benchmark.mjs`
+- `node --check work-products/benchmarks/xhttp_stream_benchmark.mjs`
 
 **回滚**
 
@@ -107,7 +107,7 @@
 - 先在 `work-products/tests/` 添加执行模式、聚合与指纹不一致的 RED 测试。
 - `node --test work-products/tests/xhttp_stream_process_isolation.test.mjs xhttp_stream_benchmark.test.mjs`
 - 连续两次严格 all-profile，结果保存到 `work-products/debug/`。
-- `node --check xhttp_stream_benchmark.mjs`
+- `node --check work-products/benchmarks/xhttp_stream_benchmark.mjs`
 
 **回滚**
 
@@ -212,7 +212,7 @@
 - [x] 分配/复制代理达到目标，且无虚假 buffer-reuse 能力。
 - [x] `node --test`
 - [x] `node --check _worker.js`
-- [x] `node --check xhttp_stream_benchmark.mjs`
+- [x] `node --check work-products/benchmarks/xhttp_stream_benchmark.mjs`
 - [x] `git diff --check`
 
 未通过任一项即 NO-GO，不进入部署。
@@ -243,6 +243,28 @@
 - 使用已验证的任务级 reverse patch；生产回滚仍由用户执行。
 
 > Task 6 状态（2026-07-30）：完成。`work-products/rollback/xhttp-final.reverse.patch` 已在当前工作树通过 `git apply --check`，并在隔离仓库实际应用后恢复到冻结基线；补丁 SHA-256 为 `b34062f8efb8c4cc3dd23b3bfcb9ad6ded6ee7af237982f2c2bae0883144027f`。最终变更范围审计未发现 XMUX、WS/gRPC 行为或默认连接参数变化。
+
+## Task 6A：标准化 XHTTP 工具与过程产物路径
+
+**依赖**：Task 6；不依赖 Task 7 的生产指标验收。
+
+**范围**
+
+- 将 XHTTP 基准程序迁入 `work-products/benchmarks/`，同步 Worker、测试与 CLI 路径。
+- 将旧 `tasks/` 中的诊断证据迁入 `work-products/debug/`，补丁与清单迁入 `work-products/rollback/`。
+- 删除旧 `tasks/` 忽略规则，并显式跟踪基准程序。
+
+**验收**
+
+- 仓库不再存在 `tasks/` 或根目录基准程序。
+- 当前代码与文档不再引用旧路径；历史补丁正文保持冻结快照语义。
+- Node 回归、Worker/基准语法和 Git 差异检查通过。
+
+**回滚**
+
+- 反向移动文件并恢复本任务的路径引用；不修改 `_worker.js` 行为。
+
+> Task 6A 状态（2026-07-31）：PASS。39 个旧 `tasks/` 文件已分类迁移，基准程序已迁入 `work-products/benchmarks/`；聚焦回归 20/20、完整回归 94/94、Worker/基准语法与 Git 差异检查通过。
 
 ## Task 7：用户手动生产验收
 

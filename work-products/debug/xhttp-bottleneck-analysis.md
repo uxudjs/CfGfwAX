@@ -14,9 +14,9 @@ Cloudflare Workers Free 的 CPU 限制是每个 HTTP 请求 10 ms；HTTP 流可�
 
 证据文件：
 
-- `tasks/xhttp-cpu-strict-before.json`
-- `tasks/xhttp-cpu-after.json`
-- `tasks/xhttp-cpu-checkpoint-c.md`
+- `work-products/debug/xhttp-cpu-strict-before.json`
+- `work-products/debug/xhttp-cpu-after.json`
+- `work-products/debug/xhttp-cpu-checkpoint-c.md`
 
 | 样本 | 迭代数 | 每轮逻辑数据 | 每轮 CPU 中位数 | CPU CV | 结论 |
 | --- | ---: | ---: | ---: | ---: | --- |
@@ -42,7 +42,7 @@ Cloudflare Workers Free 的 CPU 限制是每个 HTTP 请求 10 ms；HTTP 流可�
 
 ### 1. 测量校准是当前验收阻塞的直接根因
 
-`xhttp_stream_benchmark.mjs:298-301`：
+`work-products/benchmarks/xhttp_stream_benchmark.mjs:298-301`：
 
 - 只使用一次校准结果；
 - 用 `min(cpuMs, wallMs)` 选取观测值；
@@ -60,7 +60,7 @@ Windows/Node 单次 `process.cpuUsage()` 可返回 `0` 或受后台线程/JIT �
 
 基准路径：
 
-- `xhttp_stream_benchmark.mjs:186-204`：小块直接调用 `queue.写入()`；
+- `work-products/benchmarks/xhttp_stream_benchmark.mjs:186-204`：小块直接调用 `queue.写入()`；
 - 只有达到高水位才 `await queue.等待低水位()`。
 
 因此小块 profile 的本地结果只能证明队列算法，不代表完整 XHTTP request-body pump。

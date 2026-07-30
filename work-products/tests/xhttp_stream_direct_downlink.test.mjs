@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-import { createDeterministicFixture, runProfileOnce } from '../../xhttp_stream_benchmark.mjs';
+import { createDeterministicFixture, runProfileOnce } from '../benchmarks/xhttp_stream_benchmark.mjs';
 
 const source = await readFile(new URL('../../_worker.js', import.meta.url), 'utf8');
 if (!globalThis.WebSocket) globalThis.WebSocket = { OPEN: 1, CLOSING: 2, CLOSED: 3 };

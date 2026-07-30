@@ -41,10 +41,15 @@
 - [x] Checkpoint B：连续两次 all-profile 稳定性通过。
 - [x] Checkpoint B：`node --test`（94/94）。
 - [x] Checkpoint B：`node --check _worker.js`。
-- [x] Checkpoint B：`node --check xhttp_stream_benchmark.mjs`。
+- [x] Checkpoint B：`node --check work-products/benchmarks/xhttp_stream_benchmark.mjs`。
 - [x] Checkpoint B：`git diff --check`。
 - [x] Task 6：从冻结基线重建并隔离验证任务级 reverse patch。
 - [x] Task 6：审计最终 diff 只触及批准范围。
+
+## Phase 4A：路径标准化
+
+- [x] Task 6A：迁移基准程序、诊断证据与回滚材料，并同步所有引用。
+- [x] Task 6A：通过完整 Node、语法、路径和 Git 差异检查。
 
 ## Phase 5：用户手动生产验收
 

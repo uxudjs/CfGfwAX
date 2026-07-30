@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { planSteadyStateWindow } from '../../xhttp_stream_benchmark.mjs';
+import { planSteadyStateWindow } from '../benchmarks/xhttp_stream_benchmark.mjs';
 
 const rounds = values => values.map(sampleCpuMs => ({ sampleCpuMs, sampleWallMs: sampleCpuMs }));
 

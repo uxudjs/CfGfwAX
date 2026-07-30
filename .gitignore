@@ -4,7 +4,6 @@ tmp/
 .workbuddy/
 AGENTS.md
 SPEC.md
-tasks/
 
 # Local tool and runtime state
 .agents/
@@ -59,3 +58,11 @@ log/
 !xhttp_stream_uplink.test.mjs
 !xhttp_stream_downlink.test.mjs
 !xhttp_stream_lifecycle.test.mjs
+/work-products/*
+!/work-products/SPEC.md
+!/work-products/plan.md
+!/work-products/todo.md
+!/work-products/tests/
+!/work-products/tests/**
+!/work-products/benchmarks/
+!/work-products/benchmarks/**

@@ -10,6 +10,10 @@
 
 - 同版严格 A/B 中，XHTTP 下行 1/16/64 KiB CPU 分别下降 71.46%、97.48%、99.03%，双向分别下降 39.65%、87.88%、96.38%；输出 SHA 保持一致，WebSocket、gRPC、XMUX 与默认连接参数不变。
 
+### Maintenance
+
+- 将 XHTTP 基准程序迁入 `work-products/benchmarks/`，旧 `tasks/` 中的诊断证据、补丁与清单分别归档至 `work-products/debug/` 和 `work-products/rollback/`，并同步测试、CLI、文档与忽略规则路径。
+
 ### Verification
 
 - 本地 94 项 Node 回归、Worker/基准语法与补丁检查通过；Cloudflare 实地部署及 Codex 长连接由用户验证稳定，当前未观察到超时或断流。

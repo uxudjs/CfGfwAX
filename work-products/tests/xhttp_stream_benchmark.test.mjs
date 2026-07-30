@@ -11,7 +11,7 @@ import {
 	selectMeasurementIterations,
 	summarizeRounds,
 	summarizeStability,
-} from './xhttp_stream_benchmark.mjs';
+} from '../benchmarks/xhttp_stream_benchmark.mjs';
 
 test('benchmark 参数固定默认工作量并拒绝未知 profile', () => {
 	assert.deepEqual(parseBenchmarkOptions([]), {
@@ -24,7 +24,7 @@ test('benchmark 参数固定默认工作量并拒绝未知 profile', () => {
 		downlinkStrategy: 'auto',
 		workerSource: null,
 	});
-	assert.equal(parseBenchmarkOptions(['--worker-source', 'tasks/before.js']).workerSource, 'tasks/before.js');
+	assert.equal(parseBenchmarkOptions(['--worker-source', 'work-products/debug/before.js']).workerSource, 'work-products/debug/before.js');
 	assert.equal(parseBenchmarkOptions(['--downlink-strategy', 'shared-grain']).downlinkStrategy, 'shared-grain');
 	assert.throws(() => parseBenchmarkOptions(['--profile', 'packet-up']), /Unknown profile/);
 	assert.throws(() => parseBenchmarkOptions(['--rounds', '0']), /positive integer/);
@@ -117,7 +117,7 @@ test('小型基准生成完整环境、逐轮、代理和字节正确性字段',
 
 test('CLI 参数错误以非零状态退出', () => {
 	const result = spawnSync(process.execPath, [
-		fileURLToPath(new URL('./xhttp_stream_benchmark.mjs', import.meta.url)),
+		fileURLToPath(new URL('../benchmarks/xhttp_stream_benchmark.mjs', import.meta.url)),
 		'--profile',
 		'packet-down',
 	], { encoding: 'utf8' });

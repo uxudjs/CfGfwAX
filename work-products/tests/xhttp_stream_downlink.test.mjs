@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-const source = await readFile(new URL('./_worker.js', import.meta.url), 'utf8');
+const source = await readFile(new URL('../../_worker.js', import.meta.url), 'utf8');
 if (!globalThis.WebSocket) globalThis.WebSocket = { OPEN: 1, CLOSING: 2, CLOSED: 3 };
 const moduleUrl = `data:text/javascript;base64,${Buffer.from(`${source}\nexport { 创建下行Grain发送器 };`).toString('base64')}`;
 const { 创建下行Grain发送器 } = await import(moduleUrl);

@@ -1,7 +1,7 @@
 # XHTTP 最终反向补丁清单
 
 - 基线捕获：2026-07-29，HEAD `21edfd47a3bfa03c0d5ce85ef028a682e962e850`。
-- 基线说明：`tasks/xhttp-cpu-worktree-baseline.md`；优化开始前已有的 `CHANGELOG`、`_worker.js`、`chain_proxy.test.mjs` 修改已保留。
+- 基线说明：`work-products/debug/xhttp-cpu-worktree-baseline.md`；优化开始前已有的 `CHANGELOG`、`_worker.js`、`chain_proxy.test.mjs` 修改已保留。
 - 反向补丁：`work-products/rollback/xhttp-final.reverse.patch`。
 - SHA-256：`17ba170faa7fc43d66b839996053694a20acff68c111710383328c1a506f5d2e`。
 - 大小：93,235 bytes。

@@ -3,7 +3,7 @@ import test from 'node:test';
 import {
 	createDeterministicFixture,
 	runProfileOnce,
-} from '../../xhttp_stream_benchmark.mjs';
+} from '../benchmarks/xhttp_stream_benchmark.mjs';
 
 test('handler-level 上行基准经过请求体读取并复现逐块 await', async () => {
 	const fixture = createDeterministicFixture(128 * 1024);

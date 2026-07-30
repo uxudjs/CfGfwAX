@@ -15,7 +15,7 @@ Object.defineProperty(crypto.subtle, 'digest', {
 	}
 });
 
-const source = await readFile(new URL('./_worker.js', import.meta.url), 'utf8');
+const source = await readFile(new URL('../../_worker.js', import.meta.url), 'utf8');
 const moduleUrl = `data:text/javascript;base64,${Buffer.from(`${source}\nexport { 追加API备注, base64SecretEncode, 读取config_JSON, 反代参数获取, 处理XHTTP请求, socks5Connect, httpConnect, connectStreams, 构建断流诊断 };`).toString('base64')}`;
 const { default: worker, 追加API备注, base64SecretEncode, 读取config_JSON, 反代参数获取, 处理XHTTP请求, socks5Connect, httpConnect, connectStreams, 构建断流诊断 } = await import(moduleUrl);
 

@@ -102,7 +102,7 @@ export function createDeterministicFixture(totalBytes) {
 }
 
 async function loadWorkerInternals(workerSource = null) {
-	const sourceUrl = workerSource ? pathToFileURL(resolve(workerSource)) : new URL('./_worker.js', import.meta.url);
+	const sourceUrl = workerSource ? pathToFileURL(resolve(workerSource)) : new URL('../../_worker.js', import.meta.url);
 	if (!workerInternalsPromises.has(sourceUrl.href)) {
 		workerInternalsPromises.set(sourceUrl.href, (async () => {
 			if (!globalThis.WebSocket) globalThis.WebSocket = { OPEN: 1, CLOSING: 2, CLOSED: 3 };

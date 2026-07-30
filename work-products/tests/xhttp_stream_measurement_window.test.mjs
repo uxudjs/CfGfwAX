@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { planMeasurementWindow } from '../../xhttp_stream_benchmark.mjs';
+import { planMeasurementWindow } from '../benchmarks/xhttp_stream_benchmark.mjs';
 
 function rounds(cpuValues) {
 	return cpuValues.map(cpuMs => ({ cpuMs, wallMs: cpuMs }));

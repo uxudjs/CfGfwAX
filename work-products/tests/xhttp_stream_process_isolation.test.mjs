@@ -4,7 +4,7 @@ import {
 	planIsolatedProfileAttempt,
 	selectProfileExecutionMode,
 	validateIsolatedFingerprints,
-} from '../../xhttp_stream_benchmark.mjs';
+} from '../benchmarks/xhttp_stream_benchmark.mjs';
 
 const commonFingerprint = {
 	node: 'v20.19.2',

@@ -3,7 +3,7 @@ import test from 'node:test';
 import {
 	planCalibrationStage,
 	selectMeasurementIterations,
-} from '../../xhttp_stream_benchmark.mjs';
+} from '../benchmarks/xhttp_stream_benchmark.mjs';
 
 const sample = (sampleCpuMs, sampleWallMs) => ({ sampleCpuMs, sampleWallMs });
 

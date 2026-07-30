@@ -4,7 +4,7 @@ import test from 'node:test';
 
 if (!globalThis.WebSocket) globalThis.WebSocket = { OPEN: 1, CLOSING: 2, CLOSED: 3 };
 
-const source = await readFile(new URL('./_worker.js', import.meta.url), 'utf8');
+const source = await readFile(new URL('../../_worker.js', import.meta.url), 'utf8');
 const moduleUrl = `data:text/javascript;base64,${Buffer.from(`${source}\nexport { 处理XHTTP请求 };`).toString('base64')}`;
 const { 处理XHTTP请求 } = await import(moduleUrl);
 
