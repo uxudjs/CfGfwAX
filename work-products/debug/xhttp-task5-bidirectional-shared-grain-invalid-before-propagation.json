@@ -1,0 +1,2941 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-07-30T07:42:22.799Z",
+  "config": {
+    "profile": "bidirectional",
+    "warmup": 2,
+    "rounds": 7,
+    "totalBytesPerDirection": 16777216,
+    "chunkBytes": [
+      1024,
+      16384,
+      65536
+    ],
+    "cpuMeasurementObserver": "off",
+    "forcedGcBetweenRounds": false,
+    "cpuSampleTargetMs": 2000,
+    "cpuSampleWindowMs": [
+      1500,
+      3500
+    ],
+    "steadyStateWindow": 5,
+    "minSteadyStateRounds": 12,
+    "requiredSteadyStateWindows": 3,
+    "maxSteadyStateRounds": 24,
+    "steadyStateCvLimit": 0.1,
+    "steadyStateTrendLimit": 0.1,
+    "uplinkStrategy": "auto",
+    "workerSource": "default",
+    "profileIsolation": "isolated-processes",
+    "maxIsolatedProfileAttempts": 2
+  },
+  "environmentFingerprint": {
+    "node": "v20.19.2",
+    "platform": "win32",
+    "arch": "x64",
+    "cpuModel": "Intel(R) Core(TM) Ultra 7 155H",
+    "logicalCores": 22,
+    "powerMode": "balanced:381b4222-f694-41f0-9685-ff5bb260df2e",
+    "benchmarkSha256": "720f476c44761835e038761d56e82eaa83fab753c66c1da39e37e4f7c40b9cd2",
+    "fixtureSha256": "d59fcee807ed4a3b1febe4dc393ca64f7d4e4faeedcb9e1a927dee8712fc20d5",
+    "workerSourceSha256": "ed6669069a61ad528651be3aa5210bd17fcc46b7a64ee21dab6b24577a293a56"
+  },
+  "profileProcesses": [
+    {
+      "profile": "bidirectional-1kib",
+      "processId": 27416
+    },
+    {
+      "profile": "bidirectional-16kib",
+      "processId": 212
+    },
+    {
+      "profile": "bidirectional-64kib",
+      "processId": 31348
+    }
+  ],
+  "profileAttempts": [
+    {
+      "profile": "bidirectional-1kib",
+      "attempts": 1
+    },
+    {
+      "profile": "bidirectional-16kib",
+      "attempts": 1
+    },
+    {
+      "profile": "bidirectional-64kib",
+      "attempts": 1
+    }
+  ],
+  "stability": {
+    "profile": "all-selected",
+    "cpuCv": 0.047794,
+    "limit": 0.1,
+    "passed": true,
+    "profiles": [
+      {
+        "profile": "bidirectional-1kib",
+        "cpuCv": 0.018719,
+        "passed": true
+      },
+      {
+        "profile": "bidirectional-16kib",
+        "cpuCv": 0.01689,
+        "passed": true
+      },
+      {
+        "profile": "bidirectional-64kib",
+        "cpuCv": 0.047794,
+        "passed": true
+      }
+    ],
+    "failedProfiles": []
+  },
+  "profiles": [
+    {
+      "profile": "bidirectional-1kib",
+      "chunkBytes": 1024,
+      "calibration": {
+        "status": "ready",
+        "reason": null,
+        "targetCpuMs": 2000,
+        "minCpuMs": 1500,
+        "maxCpuMs": 3500,
+        "selectedIterations": 125,
+        "sampleCpuMs": 1984,
+        "sampleWallMs": 1954.2844,
+        "iterations": 125,
+        "output": {
+          "uplink": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          },
+          "downlink": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        "stages": [
+          {
+            "iterations": 1,
+            "sampleCpuMedianMs": 16,
+            "sampleWallMedianMs": 24.4764,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "continue",
+            "reason": null,
+            "nextIterations": 125,
+            "samples": [
+              {
+                "cpuMs": 93,
+                "wallMs": 27.4579,
+                "sampleCpuMs": 93,
+                "sampleWallMs": 27.4579,
+                "iterations": 1,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  }
+                }
+              },
+              {
+                "cpuMs": 16,
+                "wallMs": 24.4764,
+                "sampleCpuMs": 16,
+                "sampleWallMs": 24.4764,
+                "iterations": 1,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  }
+                }
+              },
+              {
+                "cpuMs": 0,
+                "wallMs": 19.964,
+                "sampleCpuMs": 0,
+                "sampleWallMs": 19.964,
+                "iterations": 1,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "iterations": 125,
+            "sampleCpuMedianMs": 1984,
+            "sampleWallMedianMs": 1954.2844,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "ready",
+            "reason": null,
+            "selectedIterations": 125,
+            "samples": [
+              {
+                "cpuMs": 15.88,
+                "wallMs": 16.001318,
+                "sampleCpuMs": 1985,
+                "sampleWallMs": 2000.1647,
+                "iterations": 125,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  }
+                }
+              },
+              {
+                "cpuMs": 15.872,
+                "wallMs": 15.634275,
+                "sampleCpuMs": 1984,
+                "sampleWallMs": 1954.2844,
+                "iterations": 125,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  }
+                }
+              },
+              {
+                "cpuMs": 14.752,
+                "wallMs": 14.887117,
+                "sampleCpuMs": 1844,
+                "sampleWallMs": 1860.8896,
+                "iterations": 125,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "steadyState": {
+        "status": "ready",
+        "reason": null,
+        "stableWindows": 3,
+        "cpuCv": 0.031459,
+        "trendRatio": 0.041503,
+        "sampleCpuMedianMs": 1844,
+        "phases": [
+          {
+            "cpuCv": 0.031459,
+            "trendRatio": 0.041503,
+            "sampleCpuMedianMs": 1844,
+            "windowSize": 5,
+            "cvLimit": 0.1,
+            "trendLimit": 0.1,
+            "status": "ready",
+            "reason": null,
+            "stableWindows": 3,
+            "selectedIterations": 125,
+            "warmups": [
+              {
+                "cpuMs": 15.12,
+                "wallMs": 15.025762,
+                "sampleCpuMs": 1890,
+                "sampleWallMs": 1878.2202,
+                "iterations": 125,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  }
+                }
+              },
+              {
+                "cpuMs": 14.752,
+                "wallMs": 14.752526,
+                "sampleCpuMs": 1844,
+                "sampleWallMs": 1844.0658,
+                "iterations": 125,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  }
+                }
+              },
+              {
+                "cpuMs": 14.88,
+                "wallMs": 14.84688,
+                "sampleCpuMs": 1860,
+                "sampleWallMs": 1855.86,
+                "iterations": 125,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  }
+                }
+              },
+              {
+                "cpuMs": 15.248,
+                "wallMs": 15.279551,
+                "sampleCpuMs": 1906,
+                "sampleWallMs": 1909.9439,
+                "iterations": 125,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  }
+                }
+              },
+              {
+                "cpuMs": 15.128,
+                "wallMs": 15.330366,
+                "sampleCpuMs": 1891,
+                "sampleWallMs": 1916.2958,
+                "iterations": 125,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  }
+                }
+              },
+              {
+                "cpuMs": 15,
+                "wallMs": 15.509699,
+                "sampleCpuMs": 1875,
+                "sampleWallMs": 1938.7124,
+                "iterations": 125,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  }
+                }
+              },
+              {
+                "cpuMs": 14,
+                "wallMs": 14.051671,
+                "sampleCpuMs": 1750,
+                "sampleWallMs": 1756.4589,
+                "iterations": 125,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  }
+                }
+              },
+              {
+                "cpuMs": 13.872,
+                "wallMs": 14.568476,
+                "sampleCpuMs": 1734,
+                "sampleWallMs": 1821.0595,
+                "iterations": 125,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  }
+                }
+              },
+              {
+                "cpuMs": 14.504,
+                "wallMs": 14.624338,
+                "sampleCpuMs": 1813,
+                "sampleWallMs": 1828.0423,
+                "iterations": 125,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  }
+                }
+              },
+              {
+                "cpuMs": 16.992,
+                "wallMs": 17.410927,
+                "sampleCpuMs": 2124,
+                "sampleWallMs": 2176.3659,
+                "iterations": 125,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  }
+                }
+              },
+              {
+                "cpuMs": 15.376,
+                "wallMs": 15.496206,
+                "sampleCpuMs": 1922,
+                "sampleWallMs": 1937.0257,
+                "iterations": 125,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  }
+                }
+              },
+              {
+                "cpuMs": 14.256,
+                "wallMs": 14.695462,
+                "sampleCpuMs": 1782,
+                "sampleWallMs": 1836.9328,
+                "iterations": 125,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  }
+                }
+              },
+              {
+                "cpuMs": 14.12,
+                "wallMs": 14.793393,
+                "sampleCpuMs": 1765,
+                "sampleWallMs": 1849.1741,
+                "iterations": 125,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  }
+                }
+              },
+              {
+                "cpuMs": 15,
+                "wallMs": 14.606919,
+                "sampleCpuMs": 1875,
+                "sampleWallMs": 1825.8649,
+                "iterations": 125,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  }
+                }
+              },
+              {
+                "cpuMs": 14.12,
+                "wallMs": 14.196871,
+                "sampleCpuMs": 1765,
+                "sampleWallMs": 1774.6089,
+                "iterations": 125,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  }
+                }
+              },
+              {
+                "cpuMs": 15.256,
+                "wallMs": 14.946465,
+                "sampleCpuMs": 1907,
+                "sampleWallMs": 1868.3081,
+                "iterations": 125,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  }
+                }
+              },
+              {
+                "cpuMs": 14.752,
+                "wallMs": 14.994946,
+                "sampleCpuMs": 1844,
+                "sampleWallMs": 1874.3683,
+                "iterations": 125,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1210746301
+                  }
+                }
+              }
+            ],
+            "iterations": 125
+          }
+        ]
+      },
+      "measurementIterations": 125,
+      "warmups": [
+        {
+          "cpuMs": 15.12,
+          "wallMs": 15.025762,
+          "sampleCpuMs": 1890,
+          "sampleWallMs": 1878.2202,
+          "iterations": 125,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            }
+          }
+        },
+        {
+          "cpuMs": 14.752,
+          "wallMs": 14.752526,
+          "sampleCpuMs": 1844,
+          "sampleWallMs": 1844.0658,
+          "iterations": 125,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            }
+          }
+        },
+        {
+          "cpuMs": 14.88,
+          "wallMs": 14.84688,
+          "sampleCpuMs": 1860,
+          "sampleWallMs": 1855.86,
+          "iterations": 125,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            }
+          }
+        },
+        {
+          "cpuMs": 15.248,
+          "wallMs": 15.279551,
+          "sampleCpuMs": 1906,
+          "sampleWallMs": 1909.9439,
+          "iterations": 125,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            }
+          }
+        },
+        {
+          "cpuMs": 15.128,
+          "wallMs": 15.330366,
+          "sampleCpuMs": 1891,
+          "sampleWallMs": 1916.2958,
+          "iterations": 125,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            }
+          }
+        },
+        {
+          "cpuMs": 15,
+          "wallMs": 15.509699,
+          "sampleCpuMs": 1875,
+          "sampleWallMs": 1938.7124,
+          "iterations": 125,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            }
+          }
+        },
+        {
+          "cpuMs": 14,
+          "wallMs": 14.051671,
+          "sampleCpuMs": 1750,
+          "sampleWallMs": 1756.4589,
+          "iterations": 125,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            }
+          }
+        },
+        {
+          "cpuMs": 13.872,
+          "wallMs": 14.568476,
+          "sampleCpuMs": 1734,
+          "sampleWallMs": 1821.0595,
+          "iterations": 125,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            }
+          }
+        },
+        {
+          "cpuMs": 14.504,
+          "wallMs": 14.624338,
+          "sampleCpuMs": 1813,
+          "sampleWallMs": 1828.0423,
+          "iterations": 125,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            }
+          }
+        },
+        {
+          "cpuMs": 16.992,
+          "wallMs": 17.410927,
+          "sampleCpuMs": 2124,
+          "sampleWallMs": 2176.3659,
+          "iterations": 125,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            }
+          }
+        },
+        {
+          "cpuMs": 15.376,
+          "wallMs": 15.496206,
+          "sampleCpuMs": 1922,
+          "sampleWallMs": 1937.0257,
+          "iterations": 125,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            }
+          }
+        },
+        {
+          "cpuMs": 14.256,
+          "wallMs": 14.695462,
+          "sampleCpuMs": 1782,
+          "sampleWallMs": 1836.9328,
+          "iterations": 125,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            }
+          }
+        },
+        {
+          "cpuMs": 14.12,
+          "wallMs": 14.793393,
+          "sampleCpuMs": 1765,
+          "sampleWallMs": 1849.1741,
+          "iterations": 125,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            }
+          }
+        },
+        {
+          "cpuMs": 15,
+          "wallMs": 14.606919,
+          "sampleCpuMs": 1875,
+          "sampleWallMs": 1825.8649,
+          "iterations": 125,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            }
+          }
+        },
+        {
+          "cpuMs": 14.12,
+          "wallMs": 14.196871,
+          "sampleCpuMs": 1765,
+          "sampleWallMs": 1774.6089,
+          "iterations": 125,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            }
+          }
+        },
+        {
+          "cpuMs": 15.256,
+          "wallMs": 14.946465,
+          "sampleCpuMs": 1907,
+          "sampleWallMs": 1868.3081,
+          "iterations": 125,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            }
+          }
+        },
+        {
+          "cpuMs": 14.752,
+          "wallMs": 14.994946,
+          "sampleCpuMs": 1844,
+          "sampleWallMs": 1874.3683,
+          "iterations": 125,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            }
+          }
+        }
+      ],
+      "rounds": [
+        {
+          "cpuMs": 15,
+          "wallMs": 15.632658,
+          "sampleCpuMs": 1875,
+          "sampleWallMs": 1954.0823,
+          "iterations": 125,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            }
+          }
+        },
+        {
+          "cpuMs": 15.504,
+          "wallMs": 15.678624,
+          "sampleCpuMs": 1938,
+          "sampleWallMs": 1959.828,
+          "iterations": 125,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            }
+          }
+        },
+        {
+          "cpuMs": 15.248,
+          "wallMs": 15.212738,
+          "sampleCpuMs": 1906,
+          "sampleWallMs": 1901.5923,
+          "iterations": 125,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            }
+          }
+        },
+        {
+          "cpuMs": 14.752,
+          "wallMs": 15.176388,
+          "sampleCpuMs": 1844,
+          "sampleWallMs": 1897.0485,
+          "iterations": 125,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            }
+          }
+        },
+        {
+          "cpuMs": 14.624,
+          "wallMs": 15.164168,
+          "sampleCpuMs": 1828,
+          "sampleWallMs": 1895.521,
+          "iterations": 125,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            }
+          }
+        },
+        {
+          "cpuMs": 15.24,
+          "wallMs": 15.355985,
+          "sampleCpuMs": 1905,
+          "sampleWallMs": 1919.4981,
+          "iterations": 125,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            }
+          }
+        },
+        {
+          "cpuMs": 15.008,
+          "wallMs": 15.342768,
+          "sampleCpuMs": 1876,
+          "sampleWallMs": 1917.846,
+          "iterations": 125,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1210746301
+            }
+          }
+        }
+      ],
+      "summary": {
+        "cpuMedianMs": 15.008,
+        "cpuMeanMs": 15.053714,
+        "cpuCv": 0.018719,
+        "wallMedianMs": 15.342768
+      },
+      "output": {
+        "uplink": {
+          "totalBytes": 16777216,
+          "sha256": "d59fcee807ed4a3b1febe4dc393ca64f7d4e4faeedcb9e1a927dee8712fc20d5"
+        },
+        "downlink": {
+          "totalBytes": 16777216,
+          "sha256": "d59fcee807ed4a3b1febe4dc393ca64f7d4e4faeedcb9e1a927dee8712fc20d5"
+        }
+      },
+      "proxy": {
+        "uplink": {
+          "sends": 16384,
+          "allocatedBuffersProxy": 0,
+          "copiedBytesProxy": 0,
+          "arrayBuffersPeakBytes": 0,
+          "handlerPath": "worker-xhttp-stream-one",
+          "inputViews": 16384,
+          "readerReadsProxy": 16385,
+          "pumpWriteAwaitsProxy": 16384,
+          "syncEnqueuesProxy": 16384,
+          "completionPromisesProxy": 0,
+          "backpressureWaitsProxy": 0,
+          "flushAwaitsProxy": 1
+        },
+        "downlink": {
+          "sends": 16384,
+          "allocatedBuffersProxy": 0,
+          "copiedBytesProxy": 0,
+          "arrayBuffersPeakBytes": 0,
+          "handlerPath": "worker-xhttp-stream-one",
+          "inputViews": 16384,
+          "readerReadsProxy": 16385,
+          "pumpSendAwaitsProxy": 16384,
+          "flushAwaitsProxy": 1,
+          "grainCopiedBytesProxy": 0,
+          "bufferReuseCapabilityProxy": false
+        }
+      },
+      "processId": 27416
+    },
+    {
+      "profile": "bidirectional-16kib",
+      "chunkBytes": 16384,
+      "calibration": {
+        "status": "ready",
+        "reason": null,
+        "targetCpuMs": 2000,
+        "minCpuMs": 1500,
+        "maxCpuMs": 3500,
+        "selectedIterations": 2162,
+        "sampleCpuMs": 1953,
+        "sampleWallMs": 1868.3407,
+        "iterations": 2162,
+        "output": {
+          "uplink": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          },
+          "downlink": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        "stages": [
+          {
+            "iterations": 1,
+            "sampleCpuMedianMs": 30,
+            "sampleWallMedianMs": 4.7483,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "continue",
+            "reason": null,
+            "nextIterations": 67,
+            "samples": [
+              {
+                "cpuMs": 0,
+                "wallMs": 5.8079,
+                "sampleCpuMs": 0,
+                "sampleWallMs": 5.8079,
+                "iterations": 1,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  }
+                }
+              },
+              {
+                "cpuMs": 32,
+                "wallMs": 4.7483,
+                "sampleCpuMs": 32,
+                "sampleWallMs": 4.7483,
+                "iterations": 1,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  }
+                }
+              },
+              {
+                "cpuMs": 30,
+                "wallMs": 3.3349,
+                "sampleCpuMs": 30,
+                "sampleWallMs": 3.3349,
+                "iterations": 1,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "iterations": 67,
+            "sampleCpuMedianMs": 62,
+            "sampleWallMedianMs": 59.3061,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "continue",
+            "reason": null,
+            "nextIterations": 2162,
+            "samples": [
+              {
+                "cpuMs": 2.104478,
+                "wallMs": 1.115296,
+                "sampleCpuMs": 141,
+                "sampleWallMs": 74.7248,
+                "iterations": 67,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.701493,
+                "wallMs": 0.885166,
+                "sampleCpuMs": 47,
+                "sampleWallMs": 59.3061,
+                "iterations": 67,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.925373,
+                "wallMs": 0.867252,
+                "sampleCpuMs": 62,
+                "sampleWallMs": 58.1059,
+                "iterations": 67,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "iterations": 2162,
+            "sampleCpuMedianMs": 1953,
+            "sampleWallMedianMs": 1868.3407,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "ready",
+            "reason": null,
+            "selectedIterations": 2162,
+            "samples": [
+              {
+                "cpuMs": 0.954672,
+                "wallMs": 0.893519,
+                "sampleCpuMs": 2064,
+                "sampleWallMs": 1931.7875,
+                "iterations": 2162,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.830712,
+                "wallMs": 0.864172,
+                "sampleCpuMs": 1796,
+                "sampleWallMs": 1868.3407,
+                "iterations": 2162,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.90333,
+                "wallMs": 0.854348,
+                "sampleCpuMs": 1953,
+                "sampleWallMs": 1847.101,
+                "iterations": 2162,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "steadyState": {
+        "status": "ready",
+        "reason": null,
+        "stableWindows": 3,
+        "cpuCv": 0.022689,
+        "trendRatio": 0.006668,
+        "sampleCpuMedianMs": 1874,
+        "phases": [
+          {
+            "cpuCv": 0.022689,
+            "trendRatio": 0.006668,
+            "sampleCpuMedianMs": 1874,
+            "windowSize": 5,
+            "cvLimit": 0.1,
+            "trendLimit": 0.1,
+            "status": "ready",
+            "reason": null,
+            "stableWindows": 3,
+            "selectedIterations": 2162,
+            "warmups": [
+              {
+                "cpuMs": 0.838575,
+                "wallMs": 0.847273,
+                "sampleCpuMs": 1813,
+                "sampleWallMs": 1831.8047,
+                "iterations": 2162,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.809436,
+                "wallMs": 0.839716,
+                "sampleCpuMs": 1750,
+                "sampleWallMs": 1815.4654,
+                "iterations": 2162,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.859852,
+                "wallMs": 0.859982,
+                "sampleCpuMs": 1859,
+                "sampleWallMs": 1859.282,
+                "iterations": 2162,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.882054,
+                "wallMs": 0.875587,
+                "sampleCpuMs": 1907,
+                "sampleWallMs": 1893.0188,
+                "iterations": 2162,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.888529,
+                "wallMs": 0.92496,
+                "sampleCpuMs": 1921,
+                "sampleWallMs": 1999.7637,
+                "iterations": 2162,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.874191,
+                "wallMs": 0.872918,
+                "sampleCpuMs": 1890,
+                "sampleWallMs": 1887.2487,
+                "iterations": 2162,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.838575,
+                "wallMs": 0.852956,
+                "sampleCpuMs": 1813,
+                "sampleWallMs": 1844.0918,
+                "iterations": 2162,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.838575,
+                "wallMs": 0.856908,
+                "sampleCpuMs": 1813,
+                "sampleWallMs": 1852.6353,
+                "iterations": 2162,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.808973,
+                "wallMs": 0.831896,
+                "sampleCpuMs": 1749,
+                "sampleWallMs": 1798.5602,
+                "iterations": 2162,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.882054,
+                "wallMs": 0.863617,
+                "sampleCpuMs": 1907,
+                "sampleWallMs": 1867.1399,
+                "iterations": 2162,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.823774,
+                "wallMs": 0.836977,
+                "sampleCpuMs": 1781,
+                "sampleWallMs": 1809.5442,
+                "iterations": 2162,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.860315,
+                "wallMs": 0.886586,
+                "sampleCpuMs": 1860,
+                "sampleWallMs": 1916.7996,
+                "iterations": 2162,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.86679,
+                "wallMs": 0.887248,
+                "sampleCpuMs": 1874,
+                "sampleWallMs": 1918.2292,
+                "iterations": 2162,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.867715,
+                "wallMs": 0.871396,
+                "sampleCpuMs": 1876,
+                "sampleWallMs": 1883.9576,
+                "iterations": 2162,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 1298907385
+                  }
+                }
+              }
+            ],
+            "iterations": 2162
+          }
+        ]
+      },
+      "measurementIterations": 2162,
+      "warmups": [
+        {
+          "cpuMs": 0.838575,
+          "wallMs": 0.847273,
+          "sampleCpuMs": 1813,
+          "sampleWallMs": 1831.8047,
+          "iterations": 2162,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            }
+          }
+        },
+        {
+          "cpuMs": 0.809436,
+          "wallMs": 0.839716,
+          "sampleCpuMs": 1750,
+          "sampleWallMs": 1815.4654,
+          "iterations": 2162,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            }
+          }
+        },
+        {
+          "cpuMs": 0.859852,
+          "wallMs": 0.859982,
+          "sampleCpuMs": 1859,
+          "sampleWallMs": 1859.282,
+          "iterations": 2162,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            }
+          }
+        },
+        {
+          "cpuMs": 0.882054,
+          "wallMs": 0.875587,
+          "sampleCpuMs": 1907,
+          "sampleWallMs": 1893.0188,
+          "iterations": 2162,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            }
+          }
+        },
+        {
+          "cpuMs": 0.888529,
+          "wallMs": 0.92496,
+          "sampleCpuMs": 1921,
+          "sampleWallMs": 1999.7637,
+          "iterations": 2162,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            }
+          }
+        },
+        {
+          "cpuMs": 0.874191,
+          "wallMs": 0.872918,
+          "sampleCpuMs": 1890,
+          "sampleWallMs": 1887.2487,
+          "iterations": 2162,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            }
+          }
+        },
+        {
+          "cpuMs": 0.838575,
+          "wallMs": 0.852956,
+          "sampleCpuMs": 1813,
+          "sampleWallMs": 1844.0918,
+          "iterations": 2162,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            }
+          }
+        },
+        {
+          "cpuMs": 0.838575,
+          "wallMs": 0.856908,
+          "sampleCpuMs": 1813,
+          "sampleWallMs": 1852.6353,
+          "iterations": 2162,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            }
+          }
+        },
+        {
+          "cpuMs": 0.808973,
+          "wallMs": 0.831896,
+          "sampleCpuMs": 1749,
+          "sampleWallMs": 1798.5602,
+          "iterations": 2162,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            }
+          }
+        },
+        {
+          "cpuMs": 0.882054,
+          "wallMs": 0.863617,
+          "sampleCpuMs": 1907,
+          "sampleWallMs": 1867.1399,
+          "iterations": 2162,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            }
+          }
+        },
+        {
+          "cpuMs": 0.823774,
+          "wallMs": 0.836977,
+          "sampleCpuMs": 1781,
+          "sampleWallMs": 1809.5442,
+          "iterations": 2162,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            }
+          }
+        },
+        {
+          "cpuMs": 0.860315,
+          "wallMs": 0.886586,
+          "sampleCpuMs": 1860,
+          "sampleWallMs": 1916.7996,
+          "iterations": 2162,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            }
+          }
+        },
+        {
+          "cpuMs": 0.86679,
+          "wallMs": 0.887248,
+          "sampleCpuMs": 1874,
+          "sampleWallMs": 1918.2292,
+          "iterations": 2162,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            }
+          }
+        },
+        {
+          "cpuMs": 0.867715,
+          "wallMs": 0.871396,
+          "sampleCpuMs": 1876,
+          "sampleWallMs": 1883.9576,
+          "iterations": 2162,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            }
+          }
+        }
+      ],
+      "rounds": [
+        {
+          "cpuMs": 0.867253,
+          "wallMs": 0.866977,
+          "sampleCpuMs": 1875,
+          "sampleWallMs": 1874.405,
+          "iterations": 2162,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            }
+          }
+        },
+        {
+          "cpuMs": 0.859852,
+          "wallMs": 0.880838,
+          "sampleCpuMs": 1859,
+          "sampleWallMs": 1904.3707,
+          "iterations": 2162,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            }
+          }
+        },
+        {
+          "cpuMs": 0.896392,
+          "wallMs": 0.897141,
+          "sampleCpuMs": 1938,
+          "sampleWallMs": 1939.6194,
+          "iterations": 2162,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            }
+          }
+        },
+        {
+          "cpuMs": 0.881591,
+          "wallMs": 0.896899,
+          "sampleCpuMs": 1906,
+          "sampleWallMs": 1939.0961,
+          "iterations": 2162,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            }
+          }
+        },
+        {
+          "cpuMs": 0.882054,
+          "wallMs": 0.902703,
+          "sampleCpuMs": 1907,
+          "sampleWallMs": 1951.6448,
+          "iterations": 2162,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            }
+          }
+        },
+        {
+          "cpuMs": 0.852451,
+          "wallMs": 0.859194,
+          "sampleCpuMs": 1843,
+          "sampleWallMs": 1857.5775,
+          "iterations": 2162,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            }
+          }
+        },
+        {
+          "cpuMs": 0.888529,
+          "wallMs": 0.89192,
+          "sampleCpuMs": 1921,
+          "sampleWallMs": 1928.3308,
+          "iterations": 2162,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 1298907385
+            }
+          }
+        }
+      ],
+      "summary": {
+        "cpuMedianMs": 0.881591,
+        "cpuMeanMs": 0.875446,
+        "cpuCv": 0.01689,
+        "wallMedianMs": 0.89192
+      },
+      "output": {
+        "uplink": {
+          "totalBytes": 16777216,
+          "sha256": "d59fcee807ed4a3b1febe4dc393ca64f7d4e4faeedcb9e1a927dee8712fc20d5"
+        },
+        "downlink": {
+          "totalBytes": 16777216,
+          "sha256": "d59fcee807ed4a3b1febe4dc393ca64f7d4e4faeedcb9e1a927dee8712fc20d5"
+        }
+      },
+      "proxy": {
+        "uplink": {
+          "sends": 1024,
+          "allocatedBuffersProxy": 0,
+          "copiedBytesProxy": 0,
+          "arrayBuffersPeakBytes": 0,
+          "handlerPath": "worker-xhttp-stream-one",
+          "inputViews": 1024,
+          "readerReadsProxy": 1025,
+          "pumpWriteAwaitsProxy": 1024,
+          "syncEnqueuesProxy": 1024,
+          "completionPromisesProxy": 0,
+          "backpressureWaitsProxy": 0,
+          "flushAwaitsProxy": 1
+        },
+        "downlink": {
+          "sends": 1024,
+          "allocatedBuffersProxy": 0,
+          "copiedBytesProxy": 0,
+          "arrayBuffersPeakBytes": 0,
+          "handlerPath": "worker-xhttp-stream-one",
+          "inputViews": 1024,
+          "readerReadsProxy": 1025,
+          "pumpSendAwaitsProxy": 1024,
+          "flushAwaitsProxy": 1,
+          "grainCopiedBytesProxy": 0,
+          "bufferReuseCapabilityProxy": false
+        }
+      },
+      "processId": 212
+    },
+    {
+      "profile": "bidirectional-64kib",
+      "chunkBytes": 65536,
+      "calibration": {
+        "status": "ready",
+        "reason": null,
+        "targetCpuMs": 2000,
+        "minCpuMs": 1500,
+        "maxCpuMs": 3500,
+        "selectedIterations": 6687,
+        "sampleCpuMs": 1610,
+        "sampleWallMs": 1636.2145,
+        "iterations": 6687,
+        "output": {
+          "uplink": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          },
+          "downlink": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        "stages": [
+          {
+            "iterations": 1,
+            "sampleCpuMedianMs": 0,
+            "sampleWallMedianMs": 1.0645,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "continue",
+            "reason": null,
+            "nextIterations": 1879,
+            "samples": [
+              {
+                "cpuMs": 0,
+                "wallMs": 1.0645,
+                "sampleCpuMs": 0,
+                "sampleWallMs": 1.0645,
+                "iterations": 1,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              },
+              {
+                "cpuMs": 0,
+                "wallMs": 0.8392,
+                "sampleCpuMs": 0,
+                "sampleWallMs": 0.8392,
+                "iterations": 1,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              },
+              {
+                "cpuMs": 0,
+                "wallMs": 1.3819,
+                "sampleCpuMs": 0,
+                "sampleWallMs": 1.3819,
+                "iterations": 1,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "iterations": 1879,
+            "sampleCpuMedianMs": 562,
+            "sampleWallMedianMs": 493.1232,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "continue",
+            "reason": null,
+            "nextIterations": 6687,
+            "samples": [
+              {
+                "cpuMs": 0.341139,
+                "wallMs": 0.264851,
+                "sampleCpuMs": 641,
+                "sampleWallMs": 497.6555,
+                "iterations": 1879,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.249601,
+                "wallMs": 0.253927,
+                "sampleCpuMs": 469,
+                "sampleWallMs": 477.1288,
+                "iterations": 1879,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.299095,
+                "wallMs": 0.262439,
+                "sampleCpuMs": 562,
+                "sampleWallMs": 493.1232,
+                "iterations": 1879,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "iterations": 6687,
+            "sampleCpuMedianMs": 1610,
+            "sampleWallMedianMs": 1636.2145,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "ready",
+            "reason": null,
+            "selectedIterations": 6687,
+            "samples": [
+              {
+                "cpuMs": 0.231344,
+                "wallMs": 0.242115,
+                "sampleCpuMs": 1547,
+                "sampleWallMs": 1619.0243,
+                "iterations": 6687,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.254673,
+                "wallMs": 0.246491,
+                "sampleCpuMs": 1703,
+                "sampleWallMs": 1648.2839,
+                "iterations": 6687,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.240766,
+                "wallMs": 0.244686,
+                "sampleCpuMs": 1610,
+                "sampleWallMs": 1636.2145,
+                "iterations": 6687,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "steadyState": {
+        "status": "ready",
+        "reason": null,
+        "stableWindows": 3,
+        "cpuCv": 0.041981,
+        "trendRatio": 0.081471,
+        "sampleCpuMedianMs": 1781,
+        "phases": [
+          {
+            "cpuCv": 0.041981,
+            "trendRatio": 0.081471,
+            "sampleCpuMedianMs": 1781,
+            "windowSize": 5,
+            "cvLimit": 0.1,
+            "trendLimit": 0.1,
+            "status": "ready",
+            "reason": null,
+            "stableWindows": 3,
+            "selectedIterations": 6687,
+            "warmups": [
+              {
+                "cpuMs": 0.226559,
+                "wallMs": 0.232565,
+                "sampleCpuMs": 1515,
+                "sampleWallMs": 1555.1605,
+                "iterations": 6687,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.240616,
+                "wallMs": 0.236248,
+                "sampleCpuMs": 1609,
+                "sampleWallMs": 1579.7873,
+                "iterations": 6687,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.233737,
+                "wallMs": 0.234712,
+                "sampleCpuMs": 1563,
+                "sampleWallMs": 1569.5177,
+                "iterations": 6687,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.240766,
+                "wallMs": 0.241076,
+                "sampleCpuMs": 1610,
+                "sampleWallMs": 1612.0765,
+                "iterations": 6687,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.242859,
+                "wallMs": 0.251054,
+                "sampleCpuMs": 1624,
+                "sampleWallMs": 1678.7979,
+                "iterations": 6687,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.238373,
+                "wallMs": 0.24017,
+                "sampleCpuMs": 1594,
+                "sampleWallMs": 1606.0182,
+                "iterations": 6687,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.257066,
+                "wallMs": 0.245112,
+                "sampleCpuMs": 1719,
+                "sampleWallMs": 1639.0611,
+                "iterations": 6687,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.228952,
+                "wallMs": 0.232522,
+                "sampleCpuMs": 1531,
+                "sampleWallMs": 1554.8776,
+                "iterations": 6687,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.23598,
+                "wallMs": 0.237062,
+                "sampleCpuMs": 1578,
+                "sampleWallMs": 1585.2339,
+                "iterations": 6687,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.238373,
+                "wallMs": 0.236295,
+                "sampleCpuMs": 1594,
+                "sampleWallMs": 1580.1034,
+                "iterations": 6687,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.278002,
+                "wallMs": 0.274162,
+                "sampleCpuMs": 1859,
+                "sampleWallMs": 1833.3226,
+                "iterations": 6687,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.282787,
+                "wallMs": 0.286804,
+                "sampleCpuMs": 1891,
+                "sampleWallMs": 1917.8566,
+                "iterations": 6687,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.278002,
+                "wallMs": 0.278284,
+                "sampleCpuMs": 1859,
+                "sampleWallMs": 1860.8818,
+                "iterations": 6687,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.254823,
+                "wallMs": 0.253671,
+                "sampleCpuMs": 1704,
+                "sampleWallMs": 1696.3002,
+                "iterations": 6687,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.247495,
+                "wallMs": 0.235078,
+                "sampleCpuMs": 1655,
+                "sampleWallMs": 1571.9653,
+                "iterations": 6687,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.271123,
+                "wallMs": 0.265704,
+                "sampleCpuMs": 1813,
+                "sampleWallMs": 1776.7608,
+                "iterations": 6687,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.278152,
+                "wallMs": 0.289255,
+                "sampleCpuMs": 1860,
+                "sampleWallMs": 1934.2477,
+                "iterations": 6687,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              },
+              {
+                "cpuMs": 0.266338,
+                "wallMs": 0.271774,
+                "sampleCpuMs": 1781,
+                "sampleWallMs": 1817.3553,
+                "iterations": 6687,
+                "output": {
+                  "uplink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  },
+                  "downlink": {
+                    "totalBytes": 16777216,
+                    "orderToken": 2350810522
+                  }
+                }
+              }
+            ],
+            "iterations": 6687
+          }
+        ]
+      },
+      "measurementIterations": 6687,
+      "warmups": [
+        {
+          "cpuMs": 0.226559,
+          "wallMs": 0.232565,
+          "sampleCpuMs": 1515,
+          "sampleWallMs": 1555.1605,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        },
+        {
+          "cpuMs": 0.240616,
+          "wallMs": 0.236248,
+          "sampleCpuMs": 1609,
+          "sampleWallMs": 1579.7873,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        },
+        {
+          "cpuMs": 0.233737,
+          "wallMs": 0.234712,
+          "sampleCpuMs": 1563,
+          "sampleWallMs": 1569.5177,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        },
+        {
+          "cpuMs": 0.240766,
+          "wallMs": 0.241076,
+          "sampleCpuMs": 1610,
+          "sampleWallMs": 1612.0765,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        },
+        {
+          "cpuMs": 0.242859,
+          "wallMs": 0.251054,
+          "sampleCpuMs": 1624,
+          "sampleWallMs": 1678.7979,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        },
+        {
+          "cpuMs": 0.238373,
+          "wallMs": 0.24017,
+          "sampleCpuMs": 1594,
+          "sampleWallMs": 1606.0182,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        },
+        {
+          "cpuMs": 0.257066,
+          "wallMs": 0.245112,
+          "sampleCpuMs": 1719,
+          "sampleWallMs": 1639.0611,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        },
+        {
+          "cpuMs": 0.228952,
+          "wallMs": 0.232522,
+          "sampleCpuMs": 1531,
+          "sampleWallMs": 1554.8776,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        },
+        {
+          "cpuMs": 0.23598,
+          "wallMs": 0.237062,
+          "sampleCpuMs": 1578,
+          "sampleWallMs": 1585.2339,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        },
+        {
+          "cpuMs": 0.238373,
+          "wallMs": 0.236295,
+          "sampleCpuMs": 1594,
+          "sampleWallMs": 1580.1034,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        },
+        {
+          "cpuMs": 0.278002,
+          "wallMs": 0.274162,
+          "sampleCpuMs": 1859,
+          "sampleWallMs": 1833.3226,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        },
+        {
+          "cpuMs": 0.282787,
+          "wallMs": 0.286804,
+          "sampleCpuMs": 1891,
+          "sampleWallMs": 1917.8566,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        },
+        {
+          "cpuMs": 0.278002,
+          "wallMs": 0.278284,
+          "sampleCpuMs": 1859,
+          "sampleWallMs": 1860.8818,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        },
+        {
+          "cpuMs": 0.254823,
+          "wallMs": 0.253671,
+          "sampleCpuMs": 1704,
+          "sampleWallMs": 1696.3002,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        },
+        {
+          "cpuMs": 0.247495,
+          "wallMs": 0.235078,
+          "sampleCpuMs": 1655,
+          "sampleWallMs": 1571.9653,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        },
+        {
+          "cpuMs": 0.271123,
+          "wallMs": 0.265704,
+          "sampleCpuMs": 1813,
+          "sampleWallMs": 1776.7608,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        },
+        {
+          "cpuMs": 0.278152,
+          "wallMs": 0.289255,
+          "sampleCpuMs": 1860,
+          "sampleWallMs": 1934.2477,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        },
+        {
+          "cpuMs": 0.266338,
+          "wallMs": 0.271774,
+          "sampleCpuMs": 1781,
+          "sampleWallMs": 1817.3553,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        }
+      ],
+      "rounds": [
+        {
+          "cpuMs": 0.292059,
+          "wallMs": 0.286765,
+          "sampleCpuMs": 1953,
+          "sampleWallMs": 1917.5958,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        },
+        {
+          "cpuMs": 0.275759,
+          "wallMs": 0.284226,
+          "sampleCpuMs": 1844,
+          "sampleWallMs": 1900.62,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        },
+        {
+          "cpuMs": 0.287274,
+          "wallMs": 0.28491,
+          "sampleCpuMs": 1921,
+          "sampleWallMs": 1905.1904,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        },
+        {
+          "cpuMs": 0.294452,
+          "wallMs": 0.286074,
+          "sampleCpuMs": 1969,
+          "sampleWallMs": 1912.9761,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        },
+        {
+          "cpuMs": 0.275759,
+          "wallMs": 0.271295,
+          "sampleCpuMs": 1844,
+          "sampleWallMs": 1814.1469,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        },
+        {
+          "cpuMs": 0.252281,
+          "wallMs": 0.250264,
+          "sampleCpuMs": 1687,
+          "sampleWallMs": 1673.5171,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        },
+        {
+          "cpuMs": 0.273516,
+          "wallMs": 0.279588,
+          "sampleCpuMs": 1829,
+          "sampleWallMs": 1869.6026,
+          "iterations": 6687,
+          "output": {
+            "uplink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            },
+            "downlink": {
+              "totalBytes": 16777216,
+              "orderToken": 2350810522
+            }
+          }
+        }
+      ],
+      "summary": {
+        "cpuMedianMs": 0.275759,
+        "cpuMeanMs": 0.278729,
+        "cpuCv": 0.047794,
+        "wallMedianMs": 0.284226
+      },
+      "output": {
+        "uplink": {
+          "totalBytes": 16777216,
+          "sha256": "d59fcee807ed4a3b1febe4dc393ca64f7d4e4faeedcb9e1a927dee8712fc20d5"
+        },
+        "downlink": {
+          "totalBytes": 16777216,
+          "sha256": "d59fcee807ed4a3b1febe4dc393ca64f7d4e4faeedcb9e1a927dee8712fc20d5"
+        }
+      },
+      "proxy": {
+        "uplink": {
+          "sends": 256,
+          "allocatedBuffersProxy": 0,
+          "copiedBytesProxy": 0,
+          "arrayBuffersPeakBytes": 0,
+          "handlerPath": "worker-xhttp-stream-one",
+          "inputViews": 256,
+          "readerReadsProxy": 257,
+          "pumpWriteAwaitsProxy": 256,
+          "syncEnqueuesProxy": 0,
+          "completionPromisesProxy": 256,
+          "backpressureWaitsProxy": 0,
+          "flushAwaitsProxy": 1
+        },
+        "downlink": {
+          "sends": 256,
+          "allocatedBuffersProxy": 0,
+          "copiedBytesProxy": 0,
+          "arrayBuffersPeakBytes": 0,
+          "handlerPath": "worker-xhttp-stream-one",
+          "inputViews": 256,
+          "readerReadsProxy": 257,
+          "pumpSendAwaitsProxy": 256,
+          "flushAwaitsProxy": 1,
+          "grainCopiedBytesProxy": 0,
+          "bufferReuseCapabilityProxy": false
+        }
+      },
+      "processId": 31348
+    }
+  ]
+}

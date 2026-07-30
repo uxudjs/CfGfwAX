@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-07-29T16:50:17.115Z",
+  "config": {
+    "profile": "downlink-64kib",
+    "warmup": 2,
+    "rounds": 7,
+    "totalBytesPerDirection": 16777216,
+    "chunkBytes": [
+      1024,
+      16384,
+      65536
+    ],
+    "cpuMeasurementObserver": "off",
+    "uplinkStrategy": "auto",
+    "workerSource": "default"
+  },
+  "environmentFingerprint": {
+    "node": "v20.19.2",
+    "platform": "win32",
+    "arch": "x64",
+    "cpuModel": "Intel(R) Core(TM) Ultra 7 155H",
+    "logicalCores": 22,
+    "powerMode": "balanced:381b4222-f694-41f0-9685-ff5bb260df2e",
+    "benchmarkSha256": "ea8be8875107a89d8ed8cbdf6f8e56510a0964de71b5445e04f9870208f6634a",
+    "fixtureSha256": "d59fcee807ed4a3b1febe4dc393ca64f7d4e4faeedcb9e1a927dee8712fc20d5",
+    "workerSourceSha256": "3a57a1dd665cbf737765b4685c7998eb407d01492ae1c389556283f0e277d808"
+  },
+  "stability": {
+    "profile": "downlink-64kib",
+    "cpuCv": 0.34568,
+    "limit": 0.1,
+    "passed": false,
+    "profiles": [
+      {
+        "profile": "downlink-64kib",
+        "cpuCv": 0.34568,
+        "passed": false
+      }
+    ],
+    "failedProfiles": [
+      "downlink-64kib"
+    ]
+  },
+  "profiles": [
+    {
+      "profile": "downlink-64kib",
+      "chunkBytes": 65536,
+      "calibration": {
+        "cpuMs": 0,
+        "wallMs": 1.0555,
+        "sampleCpuMs": 0,
+        "sampleWallMs": 1.0555,
+        "iterations": 1,
+        "output": {
+          "totalBytes": 16777216,
+          "orderToken": 3836841986
+        }
+      },
+      "measurementIterations": 1895,
+      "warmups": [
+        {
+          "cpuMs": 0.222691,
+          "wallMs": 0.202204,
+          "sampleCpuMs": 422,
+          "sampleWallMs": 383.1773,
+          "iterations": 1895,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 3836841986
+          }
+        },
+        {
+          "cpuMs": 0.206332,
+          "wallMs": 0.191958,
+          "sampleCpuMs": 391,
+          "sampleWallMs": 363.7596,
+          "iterations": 1895,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 3836841986
+          }
+        }
+      ],
+      "rounds": [
+        {
+          "cpuMs": 0.181003,
+          "wallMs": 0.196246,
+          "sampleCpuMs": 343,
+          "sampleWallMs": 371.887,
+          "iterations": 1895,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 3836841986
+          }
+        },
+        {
+          "cpuMs": 0.222691,
+          "wallMs": 0.194575,
+          "sampleCpuMs": 422,
+          "sampleWallMs": 368.7188,
+          "iterations": 1895,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 3836841986
+          }
+        },
+        {
+          "cpuMs": 0.198417,
+          "wallMs": 0.193283,
+          "sampleCpuMs": 376,
+          "sampleWallMs": 366.2717,
+          "iterations": 1895,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 3836841986
+          }
+        },
+        {
+          "cpuMs": 0.230607,
+          "wallMs": 0.19971,
+          "sampleCpuMs": 437,
+          "sampleWallMs": 378.4496,
+          "iterations": 1895,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 3836841986
+          }
+        },
+        {
+          "cpuMs": 0.189974,
+          "wallMs": 0.193342,
+          "sampleCpuMs": 360,
+          "sampleWallMs": 366.3831,
+          "iterations": 1895,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 3836841986
+          }
+        },
+        {
+          "cpuMs": 0.387335,
+          "wallMs": 0.344693,
+          "sampleCpuMs": 734,
+          "sampleWallMs": 653.1941,
+          "iterations": 1895,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 3836841986
+          }
+        },
+        {
+          "cpuMs": 0.412665,
+          "wallMs": 0.386748,
+          "sampleCpuMs": 782,
+          "sampleWallMs": 732.8871,
+          "iterations": 1895,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 3836841986
+          }
+        }
+      ],
+      "summary": {
+        "cpuMedianMs": 0.222691,
+        "cpuMeanMs": 0.260385,
+        "cpuCv": 0.34568,
+        "wallMedianMs": 0.196246
+      },
+      "output": {
+        "totalBytes": 16777216,
+        "sha256": "d59fcee807ed4a3b1febe4dc393ca64f7d4e4faeedcb9e1a927dee8712fc20d5"
+      },
+      "proxy": {
+        "sends": 512,
+        "allocatedBuffersProxy": 0,
+        "copiedBytesProxy": 0,
+        "arrayBuffersPeakBytes": 32768,
+        "inputViews": 256,
+        "grainCopiedBytesProxy": 0
+      }
+    }
+  ]
+}

@@ -16,8 +16,8 @@ Object.defineProperty(crypto.subtle, 'digest', {
 });
 
 const source = await readFile(new URL('./_worker.js', import.meta.url), 'utf8');
-const moduleUrl = `data:text/javascript;base64,${Buffer.from(`${source}\nexport { 追加API备注, base64SecretEncode, 读取config_JSON, 反代参数获取, socks5Connect, httpConnect, connectStreams, 构建断流诊断 };`).toString('base64')}`;
-const { default: worker, 追加API备注, base64SecretEncode, 读取config_JSON, 反代参数获取, socks5Connect, httpConnect, connectStreams, 构建断流诊断 } = await import(moduleUrl);
+const moduleUrl = `data:text/javascript;base64,${Buffer.from(`${source}\nexport { 追加API备注, base64SecretEncode, 读取config_JSON, 反代参数获取, 处理XHTTP请求, socks5Connect, httpConnect, connectStreams, 构建断流诊断 };`).toString('base64')}`;
+const { default: worker, 追加API备注, base64SecretEncode, 读取config_JSON, 反代参数获取, 处理XHTTP请求, socks5Connect, httpConnect, connectStreams, 构建断流诊断 } = await import(moduleUrl);
 
 {
 	const request = new Request('https://worker.example/version?uuid=11111111-1111-4111-8111-111111111111');
@@ -28,7 +28,7 @@ const { default: worker, 追加API备注, base64SecretEncode, 读取config_JSON,
 		{ waitUntil() { } },
 	);
 	assert.equal(response.status, 200);
-	assert.deepEqual(await response.json(), { Version: '2.4.1' });
+	assert.deepEqual(await response.json(), { Version: '2.4.2' });
 }
 
 {
@@ -117,6 +117,65 @@ test('XHTTP 追加的单个尾斜杠不改变链式代理上下文', async () =>
 	const 有尾斜杠配置 = await 反代参数获取(new URL(`https://worker.example/video/${密文}/`), UUID);
 
 	assert.deepEqual(有尾斜杠配置, 无尾斜杠配置);
+});
+
+test('XHTTP 上传异常关闭已建立的远端连接', async () => {
+	const UUID = '11111111-1111-4111-8111-111111111111';
+	const UUID字节 = Uint8Array.from(UUID.replaceAll('-', '').match(/../g), 字节 => Number.parseInt(字节, 16));
+	const 域名 = new TextEncoder().encode('target.example');
+	const 首包 = new Uint8Array(1 + 16 + 1 + 1 + 2 + 1 + 1 + 域名.byteLength);
+	let 偏移 = 0;
+	首包[偏移++] = 0;
+	首包.set(UUID字节, 偏移);
+	偏移 += UUID字节.byteLength;
+	首包[偏移++] = 0;
+	首包[偏移++] = 1;
+	首包[偏移++] = 1;
+	首包[偏移++] = 187;
+	首包[偏移++] = 2;
+	首包[偏移++] = 域名.byteLength;
+	首包.set(域名, 偏移);
+
+	let 上传控制器;
+	const 请求体 = new ReadableStream({
+		start(controller) {
+			上传控制器 = controller;
+			controller.enqueue(首包);
+		}
+	});
+	const 连接列表 = [];
+	const request = new Request('https://worker.example/video/test', { method: 'POST', body: 请求体, duplex: 'half' });
+	Object.defineProperty(request, 'fetcher', {
+		value: {
+			connect() {
+				let 下行控制器, 已关闭 = false;
+				const socket = {
+					opened: Promise.resolve(),
+					closed: new Promise(() => { }),
+					readable: new ReadableStream({ start(controller) { 下行控制器 = controller; } }),
+					writable: new WritableStream(),
+					close() {
+						已关闭 = true;
+						try { 下行控制器.close() } catch (e) { }
+					},
+					get 已关闭() { return 已关闭; }
+				};
+				连接列表.push(socket);
+				return socket;
+			}
+		}
+	});
+
+	const response = await 处理XHTTP请求(request, UUID);
+	await new Promise(resolve => setTimeout(resolve, 0));
+	const 远端连接 = 连接列表.find(socket => !socket.已关闭);
+	assert.ok(远端连接);
+	const responseReader = response.body.getReader();
+	上传控制器.error(new Error('simulated upload reset'));
+	const 结束结果 = await responseReader.read();
+
+	assert.equal(结束结果.done, true);
+	assert.equal(远端连接.已关闭, true);
 });
 
 test('合法标准 Base64 尾斜杠由原始候选优先解析', async () => {
@@ -379,7 +438,8 @@ for (const stage of ['connect', 'read', 'tls', 'send', 'flush', 'eof']) {
 		error.name = 'secret-error-name';
 		const 诊断 = 构建断流诊断({
 			stage,
-			transport: 'https://user:password@proxy.example',
+			inboundTransport: '/private/xhttp/path',
+			outboundTransport: 'https://user:password@proxy.example',
 			hasData: stage !== 'connect',
 			error,
 			closeReason: 'Cookie=session-secret',
@@ -387,9 +447,10 @@ for (const stage of ['connect', 'read', 'tls', 'send', 'flush', 'eof']) {
 			authorization: 'Bearer secret-token',
 		});
 
-		assert.deepEqual(Object.keys(诊断), ['stage', 'transport', 'hasData', 'errorName', 'closeReason']);
+		assert.deepEqual(Object.keys(诊断), ['stage', 'inboundTransport', 'outboundTransport', 'hasData', 'errorName', 'closeReason']);
 		assert.equal(诊断.stage, stage);
-		assert.equal(诊断.transport, 'unknown');
+		assert.equal(诊断.inboundTransport, 'unknown');
+		assert.equal(诊断.outboundTransport, 'unknown');
 		assert.equal(诊断.errorName, 'Error');
 		assert.equal(诊断.closeReason, 'unspecified');
 		for (const sensitive of ['secret-token', 'target.example', 'password', 'Cookie', 'Authorization']) {
@@ -414,7 +475,8 @@ test('HTTP CONNECT 建连失败记录 connect 阶段', async () => {
 	);
 	assert.deepEqual(诊断列表, [{
 		stage: 'connect',
-		transport: 'http',
+		inboundTransport: 'unknown',
+		outboundTransport: 'http',
 		hasData: false,
 		errorName: 'TypeError',
 		closeReason: 'connect-failed',
@@ -440,7 +502,8 @@ test('HTTPS CONNECT 打开失败记录 tls 阶段', async () => {
 	);
 	assert.deepEqual(诊断列表, [{
 		stage: 'tls',
-		transport: 'https',
+		inboundTransport: 'unknown',
+		outboundTransport: 'https',
 		hasData: false,
 		errorName: 'Error',
 		closeReason: 'tls-failed',
@@ -468,7 +531,8 @@ test('connectStreams 读取失败记录 read 阶段', async () => {
 	await connectStreams(remoteSocket, webSocket, null, null, 'http', 诊断 => 诊断列表.push(构建断流诊断(诊断)));
 	assert.deepEqual(诊断列表, [{
 		stage: 'read',
-		transport: 'http',
+		inboundTransport: 'unknown',
+		outboundTransport: 'http',
 		hasData: false,
 		errorName: 'Error',
 		closeReason: 'read-failed',
@@ -499,7 +563,8 @@ test('connectStreams 直接发送失败记录 send 阶段', async () => {
 	await connectStreams(remoteSocket, webSocket, null, null, 'socks5', 诊断 => 诊断列表.push(构建断流诊断(诊断)));
 	assert.deepEqual(诊断列表, [{
 		stage: 'send',
-		transport: 'socks5',
+		inboundTransport: 'unknown',
+		outboundTransport: 'socks5',
 		hasData: true,
 		errorName: 'Error',
 		closeReason: 'send-failed',
@@ -530,7 +595,8 @@ test('connectStreams 尾部发送失败记录 flush 阶段', async () => {
 	await connectStreams(remoteSocket, webSocket, null, null, 'direct', 诊断 => 诊断列表.push(构建断流诊断(诊断)));
 	assert.deepEqual(诊断列表, [{
 		stage: 'flush',
-		transport: 'direct',
+		inboundTransport: 'unknown',
+		outboundTransport: 'direct',
 		hasData: true,
 		errorName: 'Error',
 		closeReason: 'flush-failed',
@@ -557,7 +623,8 @@ test('connectStreams 正常结束记录 eof 阶段', async () => {
 	await connectStreams(remoteSocket, webSocket, null, null, 'direct', 诊断 => 诊断列表.push(构建断流诊断(诊断)));
 	assert.deepEqual(诊断列表, [{
 		stage: 'eof',
-		transport: 'direct',
+		inboundTransport: 'unknown',
+		outboundTransport: 'direct',
 		hasData: false,
 		errorName: '',
 		closeReason: 'remote-eof',

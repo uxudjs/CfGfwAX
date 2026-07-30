@@ -1,0 +1,2208 @@
+diff --git b/.gitignore a/.gitignore
+index 36af2af..d782222 100644
+--- b/.gitignore
++++ a/.gitignore
+@@ -54,8 +54,3 @@ log/
+ 
+ # 测试文件
+ *.test.mjs
+-!xhttp_stream_benchmark.test.mjs
+-!xhttp_stream.test.mjs
+-!xhttp_stream_uplink.test.mjs
+-!xhttp_stream_downlink.test.mjs
+-!xhttp_stream_lifecycle.test.mjs
+diff --git b/CHANGELOG a/CHANGELOG
+--- b/CHANGELOG
++++ a/CHANGELOG
+@@ -1,17 +1 @@
+-## [v2.4.2]
+-
+-### Fix
+-
+-- 修复 XHTTP `stream-one` 长连接下行持续累积 CPU 的问题：改为 default-reader 原块直通且首包只合并一次，保持协议字节、顺序、背压、取消、EOF 和重试语义不变。
+-- 修复 XHTTP 上行队列、异常关闭及后台写入或重试失败时请求读取可能挂起的问题；正常上传 EOF 的半关闭语义不变。
+-- 将断流诊断拆分为白名单化的入站传输与出站代理字段，便于区分 XHTTP、WebSocket、gRPC 及出站类型，且不记录目标、路径、凭据或原始数据。
+-
+-### Performance
+-
+-- 同版严格 A/B 中，XHTTP 下行 1/16/64 KiB CPU 分别下降 71.46%、97.48%、99.03%，双向分别下降 39.65%、87.88%、96.38%；输出 SHA 保持一致，WebSocket、gRPC、XMUX 与默认连接参数不变。
+-
+-### Verification
+-
+-- 本地 94 项 Node 回归、Worker/基准语法与补丁检查通过；Cloudflare 实地部署及 Codex 长连接由用户验证稳定，当前未观察到超时或断流。
+-
+ ## [v2.4.1]
+diff --git b/_worker.js a/_worker.js
+index 7930b4f..c74e8f2 100644
+--- b/_worker.js
++++ a/_worker.js
+@@ -1,3 +1,3 @@
+-const Version = '2.4.2';
++const Version = '2.4.1';
+ let config_JSON, 缓存SOCKS5白名单 = null, 调试日志打印 = false;
+ let SOCKS5白名单 = ['*tapecontent.net', '*cloudatacdn.com', '*loadshare.org', '*cdn-centaurus.com', 'scholar.google.com'];
+@@ -5,7 +5,6 @@ const Pages静态页面 = 'https://uxudjs.github.io/CGAX-Pages';
+ ///////////////////////////////////////////////////////全局常量和工具函数///////////////////////////////////////////////
+ const WS早期数据最大字节 = 8 * 1024, WS早期数据最大头长度 = Math.ceil(WS早期数据最大字节 * 4 / 3) + 4;
+ const 上行合包目标字节 = 16 * 1024, 上行队列最大字节 = 16 * 1024 * 1024, 上行队列最大条目 = 4096;
+-const 上行背压高水位字节 = 64 * 1024, 上行背压高水位条目 = 64, 上行背压低水位字节 = 16 * 1024, 上行背压低水位条目 = 16;
+ const 下行Grain包字节 = 32 * 1024, 下行Grain尾部阈值 = 512, 下行Grain静默毫秒 = 0;
+ let TCP并发拨号数 = 2, 反代并发拨号数 = 1, 预加载竞速拨号 = false;
+ let 连接保活间隔毫秒 = 30000;
+@@ -564,15 +563,6 @@ export default {
+ 	}
+ };
+ ///////////////////////////////////////////////////////////////////////XHTTP传输数据///////////////////////////////////////////////
+-async function 转发XHTTP上行请求体(reader, 写入远端) {
+-	while (true) {
+-		const { done, value } = await reader.read();
+-		if (done) return;
+-		if (!value || value.byteLength === 0) continue;
+-		if (!(await 写入远端(value))) throw new Error('Remote socket is not ready');
+-	}
+-}
+-
+ async function 处理XHTTP请求(request, yourUUID, 反代上下文 = {}) {
+ 	if (!request.body) return new Response('Bad Request', { status: 400 });
+ 	const reader = request.body.getReader();
+@@ -619,7 +609,7 @@ async function 处理XHTTP请求(request, yourUUID, 反代上下文 = {}) {
+ 	};
+ 
+ 	let XHTTP上行写入队列 = null;
+-	const 木马UDP上下文 = { 缓存: new Uint8Array(0), 反代地址: 反代上下文.木马反代地址, 入站传输: 'xhttp' };
++	const 木马UDP上下文 = { 缓存: new Uint8Array(0), 反代地址: 反代上下文.木马反代地址 };
+ 	return new Response(new ReadableStream({
+ 		async start(controller) {
+ 			let 已关闭 = false;
+@@ -657,22 +647,16 @@ async function 处理XHTTP请求(request, yourUUID, 反代上下文 = {}) {
+ 					if (typeof remoteConnWrapper.retryConnect !== 'function') throw new Error('retry unavailable');
+ 					await remoteConnWrapper.retryConnect();
+ 				},
+-					关闭连接: error => {
+-						reader.cancel(error).catch(() => { });
+-						try { remoteConnWrapper.socket?.close() } catch (e) { }
+-						closeSocketQuietly(xhttpBridge);
+-					},
+-					名称: 'XHTTP上行'
+-				});
++				关闭连接: () => {
++					try { remoteConnWrapper.socket?.close() } catch (e) { }
++					closeSocketQuietly(xhttpBridge);
++				},
++				名称: 'XHTTP上行'
++			});
+ 
+-				const 写入远端 = async (payload, allowRetry = true) => {
+-					if ((payload?.byteLength || 0) >= 上行背压高水位字节) {
+-						return await 上行写入队列.直接写入并等待(payload, allowRetry);
+-					}
+-					if (!上行写入队列.写入(payload, allowRetry)) return false;
+-					if (上行写入队列.达到高水位()) await 上行写入队列.等待低水位();
+-					return true;
+-				};
++			const 写入远端 = async (payload, allowRetry = true) => {
++				return 上行写入队列.写入并等待(payload, allowRetry);
++			};
+ 
+ 			let 转发失败 = false;
+ 			try {
+@@ -688,20 +672,23 @@ async function 处理XHTTP请求(request, yourUUID, 反代上下文 = {}) {
+ 						udpRespHeader = null;
+ 					}
+ 				} else {
+-					await forwardataTCP(首包.hostname, 首包.port, 首包.rawData, xhttpBridge, 首包.respHeader, remoteConnWrapper, yourUUID, request, 反代上下文, 首包.协议 === 'trojan', 首包.原始数据, 'xhttp');
++					await forwardataTCP(首包.hostname, 首包.port, 首包.rawData, xhttpBridge, 首包.respHeader, remoteConnWrapper, yourUUID, request, 反代上下文, 首包.协议 === 'trojan', 首包.原始数据);
+ 				}
+ 
+-				if (首包.isUDP) {
+-					while (true) {
+-						const { done, value } = await reader.read();
+-						if (done) break;
+-						if (!value || value.byteLength === 0) continue;
++				while (true) {
++					const { done, value } = await reader.read();
++					if (done) break;
++					if (!value || value.byteLength === 0) continue;
++					if (首包.isUDP) {
+ 						if (首包.协议 === 'trojan') await 转发木马UDP数据(value, xhttpBridge, 木马UDP上下文, request);
+ 						else await forwardataudp(value, xhttpBridge, udpRespHeader, request);
+ 						udpRespHeader = null;
++					} else {
++						if (!(await 写入远端(value))) throw new Error('Remote socket is not ready');
+ 					}
+-				} else {
+-					await 转发XHTTP上行请求体(reader, 写入远端);
++				}
++
++				if (!首包.isUDP) {
+ 					await 上行写入队列.等待空();
+ 					const writer = 获取远端写入器();
+ 					if (writer) {
+@@ -904,7 +891,7 @@ async function 处理gRPC请求(request, yourUUID, 反代上下文 = {}) {
+ 	const reader = request.body.getReader();
+ 	const remoteConnWrapper = { socket: null, connectingPromise: null, retryConnect: null };
+ 	let isDnsQuery = false;
+-	const 木马UDP上下文 = { 缓存: new Uint8Array(0), 反代地址: 反代上下文.木马反代地址, 入站传输: 'grpc' };
++	const 木马UDP上下文 = { 缓存: new Uint8Array(0), 反代地址: 反代上下文.木马反代地址 };
+ 	let 判断是否是木马 = null;
+ 	let 当前写入Socket = null;
+ 	let 远端写入器 = null;
+@@ -1118,7 +1105,7 @@ async function 处理gRPC请求(request, yourUUID, 反代上下文 = {}) {
+ 									if (木马UDP上下文.反代地址) await 转发木马UDP数据(首包bytes, grpcBridge, 木马UDP上下文, request);
+ 									else if (有效数据长度(rawClientData) > 0) await 转发木马UDP数据(rawClientData, grpcBridge, 木马UDP上下文, request);
+ 								} else {
+-									await forwardataTCP(hostname, port, rawClientData, grpcBridge, null, remoteConnWrapper, yourUUID, request, 反代上下文, true, 首包bytes, 'grpc');
++									await forwardataTCP(hostname, port, rawClientData, grpcBridge, null, remoteConnWrapper, yourUUID, request, 反代上下文, true, 首包bytes);
+ 								}
+ 							} else {
+ 								判断是否是木马 = false;
+@@ -1138,7 +1125,7 @@ async function 处理gRPC请求(request, yourUUID, 反代上下文 = {}) {
+ 									if (判断是否是木马) await 转发木马UDP数据(rawData, grpcBridge, 木马UDP上下文, request);
+ 									else await forwardataudp(rawData, grpcBridge, null, request);
+ 								}
+-								else await forwardataTCP(hostname, port, rawData, grpcBridge, null, remoteConnWrapper, yourUUID, request, 反代上下文, false, null, 'grpc');
++								else await forwardataTCP(hostname, port, rawData, grpcBridge, null, remoteConnWrapper, yourUUID, request, 反代上下文);
+ 							}
+ 						}
+ 					}
+@@ -1238,7 +1225,7 @@ async function 处理WS请求(request, yourUUID, url, 反代上下文 = {}) {
+ 	let remoteConnWrapper = { socket: null, connectingPromise: null, retryConnect: null };
+ 	let isDnsQuery = false;
+ 	let 判断是否是木马 = null;
+-	const 木马UDP上下文 = { 缓存: new Uint8Array(0), 反代地址: 反代上下文.木马反代地址, 入站传输: 'websocket' };
++	const 木马UDP上下文 = { 缓存: new Uint8Array(0), 反代地址: 反代上下文.木马反代地址 };
+ 	const earlyDataHeader = request.headers.get('sec-websocket-protocol') || '';
+ 	const SS模式禁用EarlyData = !!url.searchParams.get('enc');
+ 	let WS上行写入队列 = null;
+@@ -1481,7 +1468,7 @@ async function 处理WS请求(request, yourUUID, url, 反代上下文 = {}) {
+ 			}
+ 			if (已写入) continue;
+ 			if (上下文.首包已建立 && 上下文.目标主机 && 上下文.目标端口 > 0) {
+-				await forwardataTCP(上下文.目标主机, 上下文.目标端口, 明文块, 上下文.回包Socket, null, remoteConnWrapper, yourUUID, request, 反代上下文, false, null, 'websocket');
++				await forwardataTCP(上下文.目标主机, 上下文.目标端口, 明文块, 上下文.回包Socket, null, remoteConnWrapper, yourUUID, request, 反代上下文);
+ 				continue;
+ 			}
+ 			const 明文数据 = 数据转Uint8Array(明文块);
+@@ -1518,7 +1505,7 @@ async function 处理WS请求(request, yourUUID, url, 反代上下文 = {}) {
+ 			上下文.首包已建立 = true;
+ 			上下文.目标主机 = hostname;
+ 			上下文.目标端口 = port;
+-			await forwardataTCP(hostname, port, rawClientData, 上下文.回包Socket, null, remoteConnWrapper, yourUUID, request, 反代上下文, false, null, 'websocket');
++			await forwardataTCP(hostname, port, rawClientData, 上下文.回包Socket, null, remoteConnWrapper, yourUUID, request, 反代上下文);
+ 		}
+ 	};
+ 
+@@ -1563,7 +1550,7 @@ async function 处理WS请求(request, yourUUID, url, 反代上下文 = {}) {
+ 				if (有效数据长度(rawClientData) > 0) return 转发木马UDP数据(rawClientData, serverSock, 木马UDP上下文, request);
+ 				return;
+ 			}
+-			await forwardataTCP(hostname, port, rawClientData, serverSock, null, remoteConnWrapper, yourUUID, request, 反代上下文, true, 当前块字节 || 数据转Uint8Array(chunk), 'websocket');
++			await forwardataTCP(hostname, port, rawClientData, serverSock, null, remoteConnWrapper, yourUUID, request, 反代上下文, true, 当前块字节 || 数据转Uint8Array(chunk));
+ 		} else {
+ 			判断是否是木马 = false;
+ 			当前块字节 = 当前块字节 || 数据转Uint8Array(chunk);
+@@ -1582,7 +1569,7 @@ async function 处理WS请求(request, yourUUID, url, 反代上下文 = {}) {
+ 				if (判断是否是木马) return 转发木马UDP数据(rawData, serverSock, 木马UDP上下文, request);
+ 				return forwardataudp(rawData, serverSock, respHeader, request);
+ 			}
+-			await forwardataTCP(hostname, port, rawData, serverSock, respHeader, remoteConnWrapper, yourUUID, request, 反代上下文, false, null, 'websocket');
++			await forwardataTCP(hostname, port, rawData, serverSock, respHeader, remoteConnWrapper, yourUUID, request, 反代上下文);
+ 		}
+ 	};
+ 
+@@ -1725,7 +1712,7 @@ async function 转发木马UDP反代数据(chunk, webSocket, 上下文, request)
+ 		const TCP连接 = 创建请求TCP连接器(request);
+ 		const socket = await 连接木马反代(data, TCP连接, 上下文.反代地址);
+ 		上下文.反代Socket = socket;
+-		connectStreams(socket, webSocket, null, null, 'trojan', 记录断流诊断, 上下文.入站传输);
++		connectStreams(socket, webSocket, null, null);
+ 		return;
+ 	}
+ 	if (!data.byteLength) return;
+@@ -2085,13 +2072,12 @@ export async function 等待进行中连接(remoteConnWrapper) {
+ 	return true;
+ }
+ 
+-async function forwardataTCP(host, portNum, rawData, ws, respHeader, remoteConnWrapper, yourUUID, request = null, 反代上下文 = {}, 允许木马反代 = false, 木马反代首包数据 = null, 入站传输 = 'unknown') {
++async function forwardataTCP(host, portNum, rawData, ws, respHeader, remoteConnWrapper, yourUUID, request = null, 反代上下文 = {}, 允许木马反代 = false, 木马反代首包数据 = null) {
+ 	const ctx反代IP = 反代上下文.反代IP || '';
+ 	const ctx代理类型 = 反代上下文.代理类型 !== undefined ? 反代上下文.代理类型 : null;
+ 	const ctx代理全局 = 反代上下文.代理全局 !== undefined ? 反代上下文.代理全局 : false;
+ 	const ctx代理参数 = 反代上下文.代理参数 || {};
+ 	const ctx反代兜底 = 反代上下文.反代兜底 !== undefined ? 反代上下文.反代兜底 : true;
+-	const 记录当前断流诊断 = context => 记录断流诊断({ ...context, inboundTransport: 入站传输 });
+ 	let 反代数组索引 = 0;
+ 	log(`[TCP转发] 目标: ${host}:${portNum} | 反代IP: ${ctx反代IP} | 反代兜底: ${ctx反代兜底 ? '是' : '否'} | 反代类型: ${ctx代理类型 || 'proxyip'} | 全局: ${ctx代理全局 ? '是' : '否'}`);
+ 	let 已通过代理发送首包 = false;
+@@ -2234,12 +2220,12 @@ async function forwardataTCP(host, portNum, rawData, ws, respHeader, remoteConnW
+ 				newSocket = await socks5Connect(host, portNum, 本次首包数据, TCP连接, ctx代理参数);
+ 			} else if (ctx代理类型 === 'http') {
+ 				log(`[HTTP代理] 代理到: ${host}:${portNum}`);
+-					newSocket = await httpConnect(host, portNum, 本次首包数据, false, TCP连接, ctx代理参数, 记录当前断流诊断);
++				newSocket = await httpConnect(host, portNum, 本次首包数据, false, TCP连接, ctx代理参数);
+ 			} else if (ctx代理类型 === 'https') {
+ 				log(`[HTTPS代理] 代理到: ${host}:${portNum}`);
+ 				newSocket = isIPHostname(ctx代理参数.hostname)
+-						? await httpsConnect(host, portNum, 本次首包数据, TCP连接, ctx代理参数, 记录当前断流诊断)
+-						: await httpConnect(host, portNum, 本次首包数据, true, TCP连接, ctx代理参数, 记录当前断流诊断);
++					? await httpsConnect(host, portNum, 本次首包数据, TCP连接, ctx代理参数)
++					: await httpConnect(host, portNum, 本次首包数据, true, TCP连接, ctx代理参数);
+ 			} else if (ctx代理类型 === 'turn') {
+ 				log(`[TURN代理] 代理到: ${host}:${portNum}`);
+ 				newSocket = await turnConnect(ctx代理参数, host, portNum, TCP连接);
+@@ -2263,7 +2249,7 @@ async function forwardataTCP(host, portNum, rawData, ws, respHeader, remoteConnW
+ 			}
+ 			if (本次发送首包) 已通过代理发送首包 = true;
+ 			remoteConnWrapper.socket = newSocket;
+-				connectStreams(newSocket, ws, respHeader, null, 使用木马反代 ? 'trojan' : (ctx代理类型 || 'direct'), 记录断流诊断, 入站传输);
++			connectStreams(newSocket, ws, respHeader, null, 使用木马反代 ? 'trojan' : (ctx代理类型 || 'direct'));
+ 		})();
+ 
+ 		remoteConnWrapper.connectingPromise = 当前连接任务;
+@@ -2284,8 +2270,7 @@ async function forwardataTCP(host, portNum, rawData, ws, respHeader, remoteConnW
+ 		} catch (err) {
+ 			记录断流诊断({
+ 				stage: 'connect',
+-					inboundTransport: 入站传输,
+-					outboundTransport: 使用木马反代 ? 'trojan' : (ctx代理类型 || 'unknown'),
++				transport: 使用木马反代 ? 'trojan' : (ctx代理类型 || 'unknown'),
+ 				hasData: false,
+ 				error: err,
+ 				closeReason: 'connect-failed',
+@@ -2301,7 +2286,7 @@ async function forwardataTCP(host, portNum, rawData, ws, respHeader, remoteConnW
+ 			connectStreams(initialSocket, ws, respHeader, async () => {
+ 				if (remoteConnWrapper.socket !== initialSocket) return;
+ 				await connecttoPry();
+-				}, 'direct', 记录断流诊断, 入站传输);
++			}, 'direct');
+ 		} catch (err) {
+ 			log(`[TCP转发] 直连 ${host}:${portNum} 失败: ${err.message}`);
+ 			if (err instanceof Error && err.name === '预加载解析为空') {
+@@ -2375,14 +2360,10 @@ function 创建上行写入队列({ 获取写入器, 释放写入器, 重试连
+ 	let chunks = [];
+ 	let head = 0;
+ 	let queuedBytes = 0;
+-	let activeBytes = 0;
+-	let activeItems = 0;
+ 	let draining = false;
+ 	let closed = false;
+-	let terminalError = null;
+ 	let bundleBuffer = null;
+ 	let idleResolvers = [];
+-	let lowWaterResolvers = [];
+ 	let activeCompletions = null;
+ 
+ 	const settleCompletions = (completions, err = null) => {
+@@ -2407,43 +2388,16 @@ function 创建上行写入队列({ 获取写入器, 释放写入器, 重试连
+ 		}
+ 	};
+ 
+-	const currentBytes = () => queuedBytes + activeBytes;
+-	const currentItems = () => chunks.length - head + activeItems;
+-	const isLowWater = () => currentBytes() <= 上行背压低水位字节 && currentItems() <= 上行背压低水位条目;
+-
+-	const settleResolvers = (resolvers, err = null) => {
+-		for (const resolver of resolvers) {
+-			if (err) resolver.reject(err);
+-			else resolver.resolve();
+-		}
+-	};
+-
+-	const resolveWaiters = () => {
+-		if (terminalError) {
+-			const idle = idleResolvers;
+-			const lowWater = lowWaterResolvers;
+-			idleResolvers = [];
+-			lowWaterResolvers = [];
+-			settleResolvers(idle, terminalError);
+-			settleResolvers(lowWater, terminalError);
+-			return;
+-		}
+-		if (isLowWater() && lowWaterResolvers.length) {
+-			const resolvers = lowWaterResolvers;
+-			lowWaterResolvers = [];
+-			settleResolvers(resolvers);
+-		}
+-		if (!currentBytes() && !draining && idleResolvers.length) {
+-			const resolvers = idleResolvers;
+-			idleResolvers = [];
+-			settleResolvers(resolvers);
+-		}
++	const resolveIdle = () => {
++		if (queuedBytes || draining || !idleResolvers.length) return;
++		const resolvers = idleResolvers;
++		idleResolvers = [];
++		for (const resolve of resolvers) resolve();
+ 	};
+ 
+ 	const clear = (err = null) => {
+ 		const closeErr = err || (closed ? new Error(`${名称}: queue closed`) : null);
+ 		if (closeErr) {
+-			terminalError ||= closeErr;
+ 			rejectQueued(closeErr);
+ 			settleCompletions(activeCompletions, closeErr);
+ 			activeCompletions = null;
+@@ -2451,9 +2405,7 @@ function 创建上行写入队列({ 获取写入器, 释放写入器, 重试连
+ 		chunks = [];
+ 		head = 0;
+ 		queuedBytes = 0;
+-		activeBytes = 0;
+-		activeItems = 0;
+-		resolveWaiters();
++		resolveIdle();
+ 	};
+ 
+ 	const shift = () => {
+@@ -2499,21 +2451,6 @@ function 创建上行写入队列({ 获取写入器, 释放写入器, 重试连
+ 		return { chunk: output.subarray(0, byteLength), allowRetry, completions };
+ 	};
+ 
+-	const 写入单项 = async (item) => {
+-		let writer = 获取写入器();
+-		if (!writer) throw new Error(`${名称}: remote writer unavailable`);
+-		try {
+-			await writer.write(item.chunk);
+-		} catch (err) {
+-			释放写入器?.();
+-			if (!item.allowRetry || typeof 重试连接 !== 'function') throw err;
+-			await 重试连接();
+-			writer = 获取写入器();
+-			if (!writer) throw err;
+-			await writer.write(item.chunk);
+-		}
+-	};
+-
+ 	const drain = async () => {
+ 		if (draining || closed) return;
+ 		draining = true;
+@@ -2522,21 +2459,27 @@ function 创建上行写入队列({ 获取写入器, 释放写入器, 重试连
+ 				if (closed) break;
+ 				const item = bundle();
+ 				if (!item) break;
+-				activeBytes = item.chunk.byteLength;
+-				activeItems = 1;
++				let writer = 获取写入器();
++				if (!writer) throw new Error(`${名称}: remote writer unavailable`);
+ 				const completions = item.completions || null;
+ 				activeCompletions = completions;
+ 				try {
+-					await 写入单项(item);
++					try {
++						await writer.write(item.chunk);
++					} catch (err) {
++						释放写入器?.();
++						if (!item.allowRetry || typeof 重试连接 !== 'function') throw err;
++						await 重试连接();
++						writer = 获取写入器();
++						if (!writer) throw err;
++						await writer.write(item.chunk);
++					}
+ 					settleCompletions(completions);
+ 				} catch (err) {
+ 					settleCompletions(completions, err);
+ 					throw err;
+ 				} finally {
+ 					if (activeCompletions === completions) activeCompletions = null;
+-					activeBytes = 0;
+-					activeItems = 0;
+-					resolveWaiters();
+ 				}
+ 			}
+ 		} catch (err) {
+@@ -2547,7 +2490,7 @@ function 创建上行写入队列({ 获取写入器, 释放写入器, 重试连
+ 		} finally {
+ 			draining = false;
+ 			if (!closed && head < chunks.length) queueMicrotask(drain);
+-			else resolveWaiters();
++			else resolveIdle();
+ 		}
+ 	};
+ 
+@@ -2557,8 +2500,8 @@ function 创建上行写入队列({ 获取写入器, 释放写入器, 重试连
+ 		if (!获取写入器()) return false;
+ 		const chunk = 数据转Uint8Array(data);
+ 		if (!chunk.byteLength) return true;
+-		const nextBytes = currentBytes() + chunk.byteLength;
+-		const nextItems = currentItems() + 1;
++		const nextBytes = queuedBytes + chunk.byteLength;
++		const nextItems = chunks.length - head + 1;
+ 		if (nextBytes > 上行队列最大字节 || nextItems > 上行队列最大条目) {
+ 			closed = true;
+ 			const err = Object.assign(new Error(`${名称}: upload queue overflow (${nextBytes}B/${nextItems})`), { isQueueOverflow: true });
+@@ -2574,46 +2517,11 @@ function 创建上行写入队列({ 获取写入器, 释放写入器, 重试连
+ 			completionPromise = new Promise((resolve, reject) => completions.push({ resolve, reject }));
+ 		}
+ 		chunks.push({ chunk, allowRetry, completions });
+-		queuedBytes += chunk.byteLength;
++		queuedBytes = nextBytes;
+ 		if (!draining) queueMicrotask(drain);
+ 		return waitForFlush ? completionPromise.then(() => true) : true;
+ 	};
+ 
+-	const 直接写入并等待 = async (data, allowRetry = true) => {
+-		if (closed) return false;
+-		if (!获取写入器()) return false;
+-		const chunk = 数据转Uint8Array(data);
+-		if (!chunk.byteLength) return true;
+-		if (draining || currentBytes()) return await enqueue(chunk, allowRetry, true);
+-		if (chunk.byteLength > 上行队列最大字节) {
+-			closed = true;
+-			const err = Object.assign(new Error(`${名称}: upload queue overflow (${chunk.byteLength}B/1)`), { isQueueOverflow: true });
+-			clear(err);
+-			log(`[${名称}] 队列超限，关闭连接`);
+-			try { 关闭连接?.(err) } catch (_) { }
+-			throw err;
+-		}
+-		draining = true;
+-		activeBytes = chunk.byteLength;
+-		activeItems = 1;
+-		try {
+-			await 写入单项({ chunk, allowRetry });
+-			return true;
+-		} catch (err) {
+-			closed = true;
+-			clear(err);
+-			log(`[${名称}] 写入失败: ${err?.message || err}`);
+-			try { 关闭连接?.(err) } catch (_) { }
+-			throw err;
+-		} finally {
+-			activeBytes = 0;
+-			activeItems = 0;
+-			draining = false;
+-			if (!closed && head < chunks.length) queueMicrotask(drain);
+-			else resolveWaiters();
+-		}
+-	};
+-
+ 	return {
+ 		写入(data, allowRetry = true) {
+ 			return enqueue(data, allowRetry, false);
+@@ -2621,31 +2529,9 @@ function 创建上行写入队列({ 获取写入器, 释放写入器, 重试连
+ 		写入并等待(data, allowRetry = true) {
+ 			return enqueue(data, allowRetry, true);
+ 		},
+-		直接写入并等待,
+-		达到高水位() {
+-			return currentBytes() >= 上行背压高水位字节 || currentItems() >= 上行背压高水位条目;
+-		},
+-		async 等待低水位() {
+-			if (terminalError) throw terminalError;
+-			if (isLowWater()) return;
+-			if (closed) throw new Error(`${名称}: queue closed`);
+-			await new Promise((resolve, reject) => lowWaterResolvers.push({ resolve, reject }));
+-		},
+ 		async 等待空() {
+-			if (terminalError) throw terminalError;
+-			if (!currentBytes() && !draining) return;
+-			if (closed) throw new Error(`${名称}: queue closed`);
+-			await new Promise((resolve, reject) => idleResolvers.push({ resolve, reject }));
+-		},
+-		状态() {
+-			const bytes = currentBytes();
+-			const items = currentItems();
+-			return {
+-				bytes,
+-				items,
+-				high: bytes >= 上行背压高水位字节 || items >= 上行背压高水位条目,
+-				low: bytes <= 上行背压低水位字节 && items <= 上行背压低水位条目
+-			};
++			if (!queuedBytes && !draining) return;
++			await new Promise(resolve => idleResolvers.push(resolve));
+ 		},
+ 		清空() {
+ 			closed = true;
+@@ -2658,11 +2544,8 @@ function 创建下行Grain发送器(webSocket, headerData = null) {
+ 	const packetCap = 下行Grain包字节;
+ 	const tailBytes = 下行Grain尾部阈值;
+ 	const lowWaterBytes = Math.max(4096, tailBytes << 3);
+-	const 允许复用发送缓冲 = webSocket.发送后可复用缓冲 === true;
+-	let reusableBuffers = [];
+-	const 获取填充缓冲 = () => reusableBuffers.pop() || new Uint8Array(packetCap);
+ 	let header = headerData;
+-	let pendingBuffer = 获取填充缓冲();
++	let pendingBuffer = new Uint8Array(packetCap);
+ 	let pendingBytes = 0;
+ 	let flushTimer = null;
+ 	let microtaskQueued = false;
+@@ -2670,8 +2553,6 @@ function 创建下行Grain发送器(webSocket, headerData = null) {
+ 	let scheduledGeneration = 0;
+ 	let waitRounds = 0;
+ 	let flushPromise = null;
+-	let sendingBuffers = 0;
+-	let cancelled = false;
+ 
+ 	const 发送原始块 = async (chunk) => {
+ 		if (webSocket.readyState !== WebSocket.OPEN) throw new Error('ws.readyState is not open');
+@@ -2689,25 +2570,15 @@ function 创建下行Grain发送器(webSocket, headerData = null) {
+ 
+ 	const flush = async () => {
+ 		while (flushPromise) await flushPromise;
+-		if (cancelled) return;
+ 		if (flushTimer) clearTimeout(flushTimer);
+ 		flushTimer = null;
+ 		microtaskQueued = false;
+ 		if (!pendingBytes) return;
+-		const sendingBuffer = pendingBuffer;
+-		const output = sendingBuffer.subarray(0, pendingBytes);
+-		pendingBuffer = 获取填充缓冲();
++		const output = pendingBuffer.subarray(0, pendingBytes).slice();
++		pendingBuffer = new Uint8Array(packetCap);
+ 		pendingBytes = 0;
+ 		waitRounds = 0;
+-		sendingBuffers++;
+-		flushPromise = 发送原始块(output)
+-			.then(() => {
+-				if (允许复用发送缓冲 && !cancelled) reusableBuffers.push(sendingBuffer);
+-			})
+-			.finally(() => {
+-				sendingBuffers--;
+-				flushPromise = null;
+-			});
++		flushPromise = 发送原始块(output).finally(() => { flushPromise = null });
+ 		return flushPromise;
+ 	};
+ 
+@@ -2742,14 +2613,12 @@ function 创建下行Grain发送器(webSocket, headerData = null) {
+ 
+ 	return {
+ 		async 直接发送(data) {
+-			if (cancelled) throw new Error('downlink sender cancelled');
+ 			let chunk = 数据转Uint8Array(data);
+ 			if (!chunk.byteLength) return;
+ 			chunk = 附加响应头(chunk);
+ 			await 发送原始块(chunk);
+ 		},
+ 		async 发送(data) {
+-			if (cancelled) throw new Error('downlink sender cancelled');
+ 			let chunk = 数据转Uint8Array(data);
+ 			if (!chunk.byteLength) return;
+ 			chunk = 附加响应头(chunk);
+@@ -2772,34 +2641,20 @@ function 创建下行Grain发送器(webSocket, headerData = null) {
+ 				else scheduleFlush();
+ 			}
+ 		},
+-		flush,
+-		取消() {
+-			cancelled = true;
+-			if (flushTimer) clearTimeout(flushTimer);
+-			flushTimer = null;
+-			microtaskQueued = false;
+-			pendingBytes = 0;
+-			reusableBuffers = [];
+-		},
+-		状态() {
+-			return { pendingBytes, sending: sendingBuffers > 0, reusableBuffers: reusableBuffers.length };
+-		}
++		flush
+ 	};
+ }
+ 
+ const 断流诊断阶段 = new Set(['connect', 'read', 'tls', 'send', 'flush', 'eof']);
+-const 断流诊断入站传输 = new Set(['websocket', 'grpc', 'xhttp', 'unknown']);
+-const 断流诊断出站传输 = new Set(['direct', 'http', 'https', 'socks5', 'turn', 'sstp', 'trojan', 'unknown']);
++const 断流诊断传输 = new Set(['direct', 'http', 'https', 'socks5', 'turn', 'sstp', 'trojan', 'websocket', 'grpc', 'xhttp', 'unknown']);
+ const 断流诊断错误名 = new Set(['Error', 'TypeError', 'RangeError', 'AbortError', 'TimeoutError', 'NetworkError', 'InvalidStateError']);
+ const 断流诊断关闭原因 = new Set(['connect-failed', 'read-failed', 'tls-failed', 'send-failed', 'flush-failed', 'remote-eof', 'retry-failed', 'unspecified']);
+ 
+-function 构建断流诊断({ stage, inboundTransport = 'unknown', outboundTransport = null, transport = null, hasData = false, error = null, closeReason = 'unspecified' } = {}) {
++function 构建断流诊断({ stage, transport, hasData = false, error = null, closeReason = 'unspecified' } = {}) {
+ 	const errorName = typeof error?.name === 'string' && 断流诊断错误名.has(error.name) ? error.name : (error ? 'Error' : '');
+-	const 出站传输 = outboundTransport ?? transport ?? 'unknown';
+ 	return {
+ 		stage: 断流诊断阶段.has(stage) ? stage : 'connect',
+-		inboundTransport: 断流诊断入站传输.has(inboundTransport) ? inboundTransport : 'unknown',
+-		outboundTransport: 断流诊断出站传输.has(出站传输) ? 出站传输 : 'unknown',
++		transport: 断流诊断传输.has(transport) ? transport : 'unknown',
+ 		hasData: Boolean(hasData),
+ 		errorName,
+ 		closeReason: 断流诊断关闭原因.has(closeReason) ? closeReason : 'unspecified',
+@@ -2812,66 +2667,7 @@ function 记录断流诊断(context) {
+ 	return 诊断;
+ }
+ 
+-async function connectXHTTPStreams(remoteSocket, xhttpBridge, headerData, retryFunc, outboundTransport, 诊断回调) {
+-	let header = headerData, hasData = false, reader, streamError = null, streamStage = 'read';
+-	reader = remoteSocket.readable.getReader();
+-	try {
+-		while (true) {
+-			streamStage = 'read';
+-			const { done, value } = await reader.read();
+-			if (done) break;
+-			if (!value || value.byteLength === 0) continue;
+-			hasData = true;
+-			let chunk = 数据转Uint8Array(value);
+-			if (header) {
+-				const merged = new Uint8Array(header.length + chunk.byteLength);
+-				merged.set(header, 0);
+-				merged.set(chunk, header.length);
+-				header = null;
+-				chunk = merged;
+-			}
+-			streamStage = 'send';
+-			if (xhttpBridge.readyState !== WebSocket.OPEN) throw new Error('ws.readyState is not open');
+-			const sendResult = xhttpBridge.send(chunk);
+-			if (sendResult && typeof sendResult.then === 'function') await sendResult;
+-		}
+-	} catch (err) { streamError = err }
+-	finally {
+-		try { await reader.cancel() } catch (e) { }
+-		try { reader.releaseLock() } catch (e) { }
+-	}
+-	if (streamError) {
+-		诊断回调({
+-			stage: streamStage,
+-			inboundTransport: 'xhttp',
+-			outboundTransport,
+-			hasData,
+-			error: streamError,
+-			closeReason: `${streamStage}-failed`,
+-		});
+-		try { remoteSocket.close?.() } catch (e) { }
+-		closeSocketQuietly(xhttpBridge);
+-		return;
+-	}
+-	if (!hasData && retryFunc) {
+-		try {
+-			try { remoteSocket.close?.() } catch (e) { }
+-			await retryFunc();
+-			return;
+-		} catch (err) {
+-			诊断回调({ stage: 'connect', inboundTransport: 'xhttp', outboundTransport, hasData, error: err, closeReason: 'retry-failed' });
+-			closeSocketQuietly(xhttpBridge);
+-			return;
+-		}
+-	}
+-	诊断回调({ stage: 'eof', inboundTransport: 'xhttp', outboundTransport, hasData, closeReason: 'remote-eof' });
+-	closeSocketQuietly(xhttpBridge);
+-}
+-
+-async function connectStreams(remoteSocket, webSocket, headerData, retryFunc, outboundTransport = 'unknown', 诊断回调 = 记录断流诊断, inboundTransport = 'unknown') {
+-	if (inboundTransport === 'xhttp') {
+-		return connectXHTTPStreams(remoteSocket, webSocket, headerData, retryFunc, outboundTransport, 诊断回调);
+-	}
++async function connectStreams(remoteSocket, webSocket, headerData, retryFunc, transport = 'unknown', 诊断回调 = 记录断流诊断) {
+ 	let header = headerData, hasData = false, reader, useBYOB = false, streamError = null, streamStage = 'read';
+ 	const BYOB单次读取上限 = 64 * 1024;
+ 	const 下行发送器 = 创建下行Grain发送器(webSocket, header);
+@@ -2915,16 +2711,11 @@ async function connectStreams(remoteSocket, webSocket, headerData, retryFunc, ou
+ 		streamStage = 'flush';
+ 		await 下行发送器.flush();
+ 	} catch (err) { streamError = err }
+-	finally {
+-		下行发送器.取消();
+-		try { await reader.cancel() } catch (e) { }
+-		try { reader.releaseLock() } catch (e) { }
+-	}
++	finally { try { await reader.cancel() } catch (e) { } try { reader.releaseLock() } catch (e) { } }
+ 	if (streamError) {
+ 		诊断回调({
+ 			stage: streamStage,
+-			inboundTransport,
+-			outboundTransport,
++			transport,
+ 			hasData,
+ 			error: streamError,
+ 			closeReason: `${streamStage}-failed`,
+@@ -2939,12 +2730,12 @@ async function connectStreams(remoteSocket, webSocket, headerData, retryFunc, ou
+ 			await retryFunc();
+ 			return;
+ 		} catch (err) {
+-			诊断回调({ stage: 'connect', inboundTransport, outboundTransport, hasData, error: err, closeReason: 'retry-failed' });
++			诊断回调({ stage: 'connect', transport, hasData, error: err, closeReason: 'retry-failed' });
+ 			closeSocketQuietly(webSocket);
+ 			return;
+ 		}
+ 	}
+-	诊断回调({ stage: 'eof', inboundTransport, outboundTransport, hasData, closeReason: 'remote-eof' });
++	诊断回调({ stage: 'eof', transport, hasData, closeReason: 'remote-eof' });
+ 	closeSocketQuietly(webSocket);
+ }
+ 
+diff --git b/chain_proxy.test.mjs a/chain_proxy.test.mjs
+--- b/chain_proxy.test.mjs
++++ a/chain_proxy.test.mjs
+@@ -29,6 +29,6 @@
+ 	);
+ 	assert.equal(response.status, 200);
+-	assert.deepEqual(await response.json(), { Version: '2.4.2' });
++	assert.deepEqual(await response.json(), { Version: '2.4.1' });
+ }
+ 
+ {
+diff --git b/xhttp_stream.test.mjs a/xhttp_stream.test.mjs
+deleted file mode 100644
+index 3a45ddc..0000000
+--- b/xhttp_stream.test.mjs
++++ /dev/null
+@@ -1,34 +0,0 @@
+-import assert from 'node:assert/strict';
+-import { readFile } from 'node:fs/promises';
+-import test from 'node:test';
+-import { createDeterministicFixture, runProfileOnce } from './xhttp_stream_benchmark.mjs';
+-
+-const source = await readFile(new URL('./_worker.js', import.meta.url), 'utf8');
+-if (!globalThis.WebSocket) globalThis.WebSocket = { OPEN: 1, CLOSING: 2, CLOSED: 3 };
+-const moduleUrl = `data:text/javascript;base64,${Buffer.from(`${source}\nexport { 获取传输协议配置, 创建上行写入队列, 创建下行Grain发送器 };`).toString('base64')}`;
+-const { 获取传输协议配置 } = await import(moduleUrl);
+-
+-test('XHTTP 只发布 stream-one，且当前路由没有其他 mode 入口', () => {
+-	assert.equal(获取传输协议配置({ 传输协议: 'xhttp' }).type, 'xhttp&mode=stream-one');
+-	for (const forbidden of ['packet-up', 'packet-down', 'multi-stream']) {
+-		assert.ok(!source.includes(forbidden), `发现未纳入规格的 XHTTP mode: ${forbidden}`);
+-	}
+-	assert.match(source, /request\.method === 'POST'/);
+-	assert.doesNotMatch(source, /处理XHTTP请求[\s\S]{0,400}\bmode\b/);
+-});
+-
+-test('确定性流夹具在上行、下行和双向保持字节长度、顺序与摘要', async () => {
+-	const fixture = createDeterministicFixture(256 * 1024);
+-	for (const profile of ['uplink-1kib', 'downlink-16kib', 'bidirectional-64kib']) {
+-		const result = await runProfileOnce(profile, fixture, { trackProxy: true });
+-		if (profile.startsWith('bidirectional')) {
+-			assert.equal(result.output.uplink.totalBytes, fixture.bytes.byteLength);
+-			assert.equal(result.output.downlink.totalBytes, fixture.bytes.byteLength);
+-			assert.equal(result.output.uplink.sha256, fixture.sha256);
+-			assert.equal(result.output.downlink.sha256, fixture.sha256);
+-		} else {
+-			assert.equal(result.output.totalBytes, fixture.bytes.byteLength);
+-			assert.equal(result.output.sha256, fixture.sha256);
+-		}
+-	}
+-});
+diff --git b/xhttp_stream_benchmark.mjs a/xhttp_stream_benchmark.mjs
+deleted file mode 100644
+index 76fbb29..0000000
+--- b/xhttp_stream_benchmark.mjs
++++ /dev/null
+@@ -1,928 +0,0 @@
+-import { spawnSync } from 'node:child_process';
+-import { createHash } from 'node:crypto';
+-import { readFile, writeFile } from 'node:fs/promises';
+-import { arch, cpus, platform } from 'node:os';
+-import { resolve } from 'node:path';
+-import { fileURLToPath, pathToFileURL } from 'node:url';
+-
+-const KIB = 1024;
+-const DEFAULT_TOTAL_BYTES = 16 * 1024 * 1024;
+-const DEFAULT_WARMUP = 2;
+-const DEFAULT_ROUNDS = 7;
+-const TARGET_SAMPLE_CPU_MS = 2000;
+-const MIN_SAMPLE_CPU_MS = 1500;
+-const MAX_SAMPLE_CPU_MS = 3500;
+-const CALIBRATION_SAMPLES = 3;
+-const MAX_CALIBRATION_STAGES = 8;
+-const MAX_CALIBRATION_ITERATIONS = 65536;
+-const STEADY_STATE_WINDOW = 5;
+-const REQUIRED_STEADY_STATE_WINDOWS = 3;
+-const MIN_STEADY_STATE_ROUNDS = 12;
+-const MAX_STEADY_STATE_ROUNDS = 24;
+-const MAX_STEADY_STATE_RECALIBRATIONS = 2;
+-const MAX_ISOLATED_PROFILE_ATTEMPTS = 2;
+-const MAX_MEASUREMENT_ROUND_MULTIPLIER = 2;
+-const CPU_STABILITY_LIMIT = 0.10;
+-const STEADY_STATE_CV_LIMIT = CPU_STABILITY_LIMIT;
+-const STEADY_STATE_TREND_LIMIT = CPU_STABILITY_LIMIT;
+-const CHUNK_SIZES = new Map([
+-	['1kib', KIB],
+-	['16kib', 16 * KIB],
+-	['64kib', 64 * KIB],
+-]);
+-const DIRECTIONS = ['uplink', 'downlink', 'bidirectional'];
+-const ALL_PROFILES = DIRECTIONS.flatMap(direction => [...CHUNK_SIZES.keys()].map(size => `${direction}-${size}`));
+-const FIXTURE_SEED = 0x9e3779b9;
+-const LEGACY_GRAIN_COPY = 'const output = pendingBuffer.subarray(0, pendingBytes).slice();';
+-const GRAIN_COPY_OBSERVER = '__xhttpBenchmarkGrainCopyObserver';
+-
+-const workerInternalsPromises = new Map();
+-
+-function sha256(data) {
+-	return createHash('sha256').update(data).digest('hex');
+-}
+-
+-function positiveInteger(value, name) {
+-	const parsed = Number(value);
+-	if (!Number.isSafeInteger(parsed) || parsed <= 0) throw new Error(`${name} must be a positive integer`);
+-	return parsed;
+-}
+-
+-export function parseBenchmarkOptions(argv) {
+-	const options = {
+-		profile: 'all',
+-		warmup: DEFAULT_WARMUP,
+-		rounds: DEFAULT_ROUNDS,
+-		output: null,
+-		totalBytes: DEFAULT_TOTAL_BYTES,
+-		uplinkStrategy: 'auto',
+-		downlinkStrategy: 'auto',
+-		workerSource: null,
+-	};
+-	for (let i = 0; i < argv.length; i++) {
+-		const flag = argv[i];
+-		const value = argv[++i];
+-		if (value === undefined) throw new Error(`Missing value for ${flag}`);
+-		if (flag === '--profile') options.profile = value;
+-		else if (flag === '--warmup') options.warmup = positiveInteger(value, '--warmup');
+-		else if (flag === '--rounds') options.rounds = positiveInteger(value, '--rounds');
+-		else if (flag === '--output') options.output = value;
+-		else if (flag === '--total-bytes') options.totalBytes = positiveInteger(value, '--total-bytes');
+-		else if (flag === '--uplink-strategy') options.uplinkStrategy = value;
+-		else if (flag === '--downlink-strategy') options.downlinkStrategy = value;
+-		else if (flag === '--worker-source') options.workerSource = value;
+-		else throw new Error(`Unknown option: ${flag}`);
+-	}
+-	if (options.profile !== 'all' && !DIRECTIONS.includes(options.profile) && !ALL_PROFILES.includes(options.profile)) {
+-		throw new Error(`Unknown profile: ${options.profile}`);
+-	}
+-	if (!['auto', 'legacy'].includes(options.uplinkStrategy)) throw new Error(`Unknown uplink strategy: ${options.uplinkStrategy}`);
+-	if (!['auto', 'shared-grain'].includes(options.downlinkStrategy)) throw new Error(`Unknown downlink strategy: ${options.downlinkStrategy}`);
+-	return options;
+-}
+-
+-export function instrumentLegacyGrainCopies(source) {
+-	if (!source.includes(LEGACY_GRAIN_COPY)) return source;
+-	return source.replace(
+-		LEGACY_GRAIN_COPY,
+-		`const outputView = pendingBuffer.subarray(0, pendingBytes); globalThis.${GRAIN_COPY_OBSERVER}?.(outputView.byteLength); const output = outputView.slice();`,
+-	);
+-}
+-
+-export function createDeterministicFixture(totalBytes) {
+-	const bytes = new Uint8Array(positiveInteger(totalBytes, 'totalBytes'));
+-	let state = FIXTURE_SEED;
+-	for (let i = 0; i < bytes.byteLength; i++) {
+-		state ^= state << 13;
+-		state ^= state >>> 17;
+-		state ^= state << 5;
+-		bytes[i] = state & 0xff;
+-	}
+-	return { bytes, seed: FIXTURE_SEED, sha256: sha256(bytes) };
+-}
+-
+-async function loadWorkerInternals(workerSource = null) {
+-	const sourceUrl = workerSource ? pathToFileURL(resolve(workerSource)) : new URL('./_worker.js', import.meta.url);
+-	if (!workerInternalsPromises.has(sourceUrl.href)) {
+-		workerInternalsPromises.set(sourceUrl.href, (async () => {
+-			if (!globalThis.WebSocket) globalThis.WebSocket = { OPEN: 1, CLOSING: 2, CLOSED: 3 };
+-			const source = await readFile(sourceUrl, 'utf8');
+-			const exportNames = '创建上行写入队列, 创建下行Grain发送器, 转发XHTTP上行请求体, connectStreams';
+-			const moduleUrl = `data:text/javascript;base64,${Buffer.from(`${source}\nexport { ${exportNames} };`).toString('base64')}`;
+-			const instrumentedSource = instrumentLegacyGrainCopies(source);
+-			const proxyModuleUrl = `data:text/javascript;base64,${Buffer.from(`${instrumentedSource}\nexport { ${exportNames} };`).toString('base64')}`;
+-			return {
+-				source,
+-				module: await import(moduleUrl),
+-				proxyModule: instrumentedSource === source ? await import(moduleUrl) : await import(proxyModuleUrl),
+-			};
+-		})());
+-	}
+-	return workerInternalsPromises.get(sourceUrl.href);
+-}
+-
+-function parseProfile(profile) {
+-	const separator = profile.lastIndexOf('-');
+-	if (separator < 0) throw new Error(`Unknown profile: ${profile}`);
+-	const direction = profile.slice(0, separator);
+-	const sizeName = profile.slice(separator + 1);
+-	const chunkBytes = CHUNK_SIZES.get(sizeName);
+-	if (!DIRECTIONS.includes(direction) || !chunkBytes) throw new Error(`Unknown profile: ${profile}`);
+-	return { direction, chunkBytes };
+-}
+-
+-function createSink(expectedBytes, inputBuffer, { captureOutput, trackProxy }) {
+-	const captured = captureOutput ? new Uint8Array(expectedBytes) : null;
+-	const seenForeignBuffers = new WeakSet();
+-	const initialArrayBuffers = process.memoryUsage().arrayBuffers;
+-	let arrayBuffersPeakBytes = 0;
+-	let totalBytes = 0;
+-	let sends = 0;
+-	let orderToken = 0;
+-	let allocatedBuffersProxy = 0;
+-	let copiedBytesProxy = 0;
+-
+-	const sampleMemory = () => {
+-		if (!trackProxy) return;
+-		arrayBuffersPeakBytes = Math.max(arrayBuffersPeakBytes, process.memoryUsage().arrayBuffers - initialArrayBuffers);
+-	};
+-
+-	return {
+-		write(data) {
+-			const chunk = data instanceof Uint8Array
+-				? data
+-				: (data instanceof ArrayBuffer
+-					? new Uint8Array(data)
+-					: new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
+-			if (totalBytes + chunk.byteLength > expectedBytes) throw new Error('benchmark sink overflow');
+-			if (captured) captured.set(chunk, totalBytes);
+-			totalBytes += chunk.byteLength;
+-			sends++;
+-			orderToken = Math.imul(orderToken ^ chunk.byteLength, 16777619) >>> 0;
+-			if (chunk.byteLength) {
+-				orderToken = Math.imul(orderToken ^ chunk[0], 16777619) >>> 0;
+-				orderToken = Math.imul(orderToken ^ chunk[chunk.byteLength - 1], 16777619) >>> 0;
+-			}
+-			if (trackProxy && chunk.buffer !== inputBuffer) {
+-				copiedBytesProxy += chunk.byteLength;
+-				if (!seenForeignBuffers.has(chunk.buffer)) {
+-					seenForeignBuffers.add(chunk.buffer);
+-					allocatedBuffersProxy++;
+-				}
+-			}
+-			if ((sends & 63) === 0) sampleMemory();
+-		},
+-		finalize() {
+-			sampleMemory();
+-			if (totalBytes !== expectedBytes) throw new Error(`benchmark byte length mismatch: ${totalBytes}/${expectedBytes}`);
+-			return {
+-				output: captured ? { totalBytes, sha256: sha256(captured) } : { totalBytes, orderToken },
+-				proxy: { sends, allocatedBuffersProxy, copiedBytesProxy, arrayBuffersPeakBytes: Math.max(0, arrayBuffersPeakBytes) },
+-			};
+-		},
+-	};
+-}
+-
+-async function executeUplink(chunkBytes, fixture, options) {
+-	const { 创建上行写入队列, 转发XHTTP上行请求体 } = (await loadWorkerInternals(options.workerSource)).module;
+-	const sink = createSink(fixture.bytes.byteLength, fixture.bytes.buffer, options);
+-	const writer = {
+-		write(data) {
+-			sink.write(data);
+-			return Promise.resolve();
+-		},
+-	};
+-	let closeError = null;
+-	const queue = 创建上行写入队列({
+-		获取写入器: () => writer,
+-		释放写入器() { },
+-		重试连接: null,
+-		关闭连接: error => { closeError = error },
+-		名称: 'XHTTP基准上行',
+-	});
+-	let inputViews = 0;
+-	let readerReadsProxy = 0;
+-	let pumpWriteAwaitsProxy = 0;
+-	let syncEnqueuesProxy = 0;
+-	let completionPromisesProxy = 0;
+-	let backpressureWaitsProxy = 0;
+-	let flushAwaitsProxy = 0;
+-	const usesBufferedXhttpPath = options.uplinkStrategy !== 'legacy'
+-		&& typeof queue.达到高水位 === 'function'
+-		&& typeof queue.等待低水位 === 'function';
+-	let offset = 0;
+-	const reader = {
+-		async read() {
+-			readerReadsProxy++;
+-			if (offset >= fixture.bytes.byteLength) return { done: true, value: undefined };
+-			const chunk = fixture.bytes.subarray(offset, Math.min(offset + chunkBytes, fixture.bytes.byteLength));
+-			offset += chunk.byteLength;
+-			inputViews++;
+-			return { done: false, value: chunk };
+-		},
+-	};
+-	const 写入远端 = async chunk => {
+-		pumpWriteAwaitsProxy++;
+-		if (usesBufferedXhttpPath && chunk.byteLength < 64 * KIB) {
+-			if (!queue.写入(chunk, false)) throw new Error('benchmark queue rejected chunk');
+-			syncEnqueuesProxy++;
+-			if (queue.达到高水位()) {
+-				backpressureWaitsProxy++;
+-				await queue.等待低水位();
+-			}
+-		} else if (!(await (typeof queue.直接写入并等待 === 'function'
+-				? queue.直接写入并等待(chunk, false)
+-				: queue.写入并等待(chunk, false)))) {
+-			completionPromisesProxy++;
+-			throw new Error('benchmark queue rejected chunk');
+-		} else {
+-			completionPromisesProxy++;
+-		}
+-		return true;
+-	};
+-	await 转发XHTTP上行请求体(reader, 写入远端);
+-	flushAwaitsProxy++;
+-	await queue.等待空();
+-	if (closeError) throw closeError;
+-	const result = sink.finalize();
+-	return {
+-		...result,
+-		proxy: {
+-					...result.proxy,
+-					handlerPath: 'worker-xhttp-stream-one',
+-					inputViews,
+-					readerReadsProxy,
+-					pumpWriteAwaitsProxy,
+-					syncEnqueuesProxy,
+-					completionPromisesProxy,
+-					backpressureWaitsProxy,
+-					flushAwaitsProxy,
+-				},
+-			};
+-}
+-
+-async function executeDownlink(chunkBytes, fixture, options) {
+-	const internals = await loadWorkerInternals(options.workerSource);
+-	const { connectStreams } = options.trackProxy ? internals.proxyModule : internals.module;
+-	const sink = createSink(fixture.bytes.byteLength, fixture.bytes.buffer, options);
+-	const webSocket = {
+-		readyState: WebSocket.OPEN,
+-		send: data => sink.write(data),
+-		close() { this.readyState = WebSocket.CLOSED },
+-	};
+-	let inputViews = 0;
+-	let readerReadsProxy = 0;
+-	let pumpSendAwaitsProxy = 0;
+-	let flushAwaitsProxy = 0;
+-	let grainCopiedBytesProxy = 0;
+-	let offset = 0;
+-	const reader = {
+-		async read(view) {
+-			readerReadsProxy++;
+-			if (offset >= fixture.bytes.byteLength) return { done: true, value: undefined };
+-			const byteLength = Math.min(chunkBytes, fixture.bytes.byteLength - offset);
+-			const chunk = fixture.bytes.subarray(offset, offset + byteLength);
+-			const value = view instanceof Uint8Array ? view.subarray(0, byteLength) : chunk;
+-			if (view instanceof Uint8Array) value.set(chunk);
+-			offset += byteLength;
+-			inputViews++;
+-			return { done: false, value };
+-		},
+-		async cancel() { },
+-		releaseLock() { },
+-	};
+-	const remoteSocket = {
+-		readable: { getReader: () => reader },
+-		close() { },
+-	};
+-	if (options.trackProxy) globalThis[GRAIN_COPY_OBSERVER] = bytes => { grainCopiedBytesProxy += bytes };
+-	try {
+-		const inboundTransport = options.downlinkStrategy === 'shared-grain' ? 'websocket' : 'xhttp';
+-		await connectStreams(remoteSocket, webSocket, null, null, 'direct', () => { }, inboundTransport);
+-		flushAwaitsProxy++;
+-	} finally {
+-		if (options.trackProxy) delete globalThis[GRAIN_COPY_OBSERVER];
+-	}
+-	const result = sink.finalize();
+-	return {
+-		...result,
+-		proxy: {
+-			...result.proxy,
+-			handlerPath: 'worker-xhttp-stream-one',
+-			inputViews,
+-			readerReadsProxy,
+-			pumpSendAwaitsProxy,
+-			flushAwaitsProxy,
+-			grainCopiedBytesProxy,
+-			bufferReuseCapabilityProxy: webSocket.发送后可复用缓冲 === true,
+-			downlinkStrategy: options.downlinkStrategy,
+-		},
+-	};
+-}
+-
+-async function executeProfile(profile, fixture, options) {
+-	const { direction, chunkBytes } = parseProfile(profile);
+-	if (direction === 'uplink') return executeUplink(chunkBytes, fixture, options);
+-	if (direction === 'downlink') return executeDownlink(chunkBytes, fixture, options);
+-	const [uplink, downlink] = await Promise.all([
+-		executeUplink(chunkBytes, fixture, options),
+-		executeDownlink(chunkBytes, fixture, options),
+-	]);
+-	return {
+-		output: { uplink: uplink.output, downlink: downlink.output },
+-		proxy: { uplink: uplink.proxy, downlink: downlink.proxy },
+-	};
+-}
+-
+-export async function runProfileOnce(profile, fixture, { trackProxy = false, workerSource = null, downlinkStrategy = 'auto' } = {}) {
+-		return executeProfile(profile, fixture, { captureOutput: true, trackProxy, workerSource, downlinkStrategy });
+-	}
+-
+-function median(values) {
+-	const sorted = [...values].sort((a, b) => a - b);
+-	const middle = Math.floor(sorted.length / 2);
+-	return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+-}
+-
+-export function summarizeRounds(rounds) {
+-	const cpuValues = rounds.map(round => round.cpuMs);
+-	const wallValues = rounds.map(round => round.wallMs);
+-	const cpuMeanMs = cpuValues.reduce((sum, value) => sum + value, 0) / cpuValues.length;
+-	const variance = cpuValues.reduce((sum, value) => sum + ((value - cpuMeanMs) ** 2), 0) / cpuValues.length;
+-	return {
+-		cpuMedianMs: Number(median(cpuValues).toFixed(6)),
+-		cpuMeanMs: Number(cpuMeanMs.toFixed(6)),
+-		cpuCv: Number((Math.sqrt(variance) / cpuMeanMs).toFixed(6)),
+-		wallMedianMs: Number(median(wallValues).toFixed(6)),
+-	};
+-}
+-
+-function calculateTrendRatio(values) {
+-	const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+-	const meanIndex = (values.length - 1) / 2;
+-	const indexVariance = values.reduce((sum, _, index) => sum + ((index - meanIndex) ** 2), 0);
+-	const slope = values.reduce((sum, value, index) => sum + ((index - meanIndex) * (value - mean)), 0) / indexVariance;
+-	return Math.abs(slope * (values.length - 1) / mean);
+-}
+-
+-export function planMeasurementWindow(rounds, requiredRounds = DEFAULT_ROUNDS, maxRounds = requiredRounds * MAX_MEASUREMENT_ROUND_MULTIPLIER) {
+-	if (!Array.isArray(rounds) || rounds.length < requiredRounds) {
+-		return { status: 'continue', reason: 'insufficient-measurement-rounds' };
+-	}
+-	const selectedStart = rounds.length - requiredRounds;
+-	const window = rounds.slice(selectedStart);
+-	const summary = summarizeRounds(window);
+-	const trendRatio = calculateTrendRatio(window.map(round => Number(round.cpuMs)));
+-	const result = {
+-		cpuCv: summary.cpuCv,
+-		trendRatio: Number(trendRatio.toFixed(6)),
+-		selectedStart,
+-		discardedRounds: selectedStart,
+-		windowSize: requiredRounds,
+-		cvLimit: CPU_STABILITY_LIMIT,
+-		trendLimit: STEADY_STATE_TREND_LIMIT,
+-	};
+-	const instabilityReason = trendRatio > STEADY_STATE_TREND_LIMIT
+-		? 'measurement-trend'
+-		: (summary.cpuCv > CPU_STABILITY_LIMIT ? 'measurement-variation' : null);
+-	if (!instabilityReason) return { ...result, status: 'ready', reason: null };
+-	if (rounds.length >= maxRounds) {
+-		return { ...result, status: 'limited', reason: 'max-measurement-rounds-reached', instabilityReason };
+-	}
+-	return { ...result, status: 'continue', reason: instabilityReason };
+-}
+-
+-export function planSteadyStateWindow(samples, iterations, stableWindows = 0, maxRounds = MAX_STEADY_STATE_ROUNDS) {
+-	if (!Array.isArray(samples) || samples.length < STEADY_STATE_WINDOW) {
+-		return { status: 'continue', reason: 'insufficient-steady-state-samples', stableWindows: 0 };
+-	}
+-	const window = samples.slice(-STEADY_STATE_WINDOW);
+-	const cpuValues = window.map(sample => Number(sample.sampleCpuMs));
+-	const sampleCpuMeanMs = cpuValues.reduce((sum, value) => sum + value, 0) / cpuValues.length;
+-	const variance = cpuValues.reduce((sum, value) => sum + ((value - sampleCpuMeanMs) ** 2), 0) / cpuValues.length;
+-	const cpuCv = Math.sqrt(variance) / sampleCpuMeanMs;
+-	const trendRatio = calculateTrendRatio(cpuValues);
+-	const sampleCpuMedianMs = median(cpuValues);
+-	const result = {
+-		cpuCv: Number(cpuCv.toFixed(6)),
+-		trendRatio: Number(trendRatio.toFixed(6)),
+-		sampleCpuMedianMs,
+-		windowSize: STEADY_STATE_WINDOW,
+-		cvLimit: STEADY_STATE_CV_LIMIT,
+-		trendLimit: STEADY_STATE_TREND_LIMIT,
+-	};
+-	const reason = trendRatio > STEADY_STATE_TREND_LIMIT
+-		? 'steady-state-trend'
+-		: (cpuCv > STEADY_STATE_CV_LIMIT ? 'steady-state-variation' : null);
+-	if (reason) {
+-		if (samples.length >= maxRounds) {
+-			return { ...result, status: 'limited', reason: 'max-steady-state-rounds-reached', stableWindows: 0 };
+-		}
+-		return { ...result, status: 'continue', reason, stableWindows: 0 };
+-	}
+-	const nextStableWindows = stableWindows + 1;
+-	if (nextStableWindows < REQUIRED_STEADY_STATE_WINDOWS) {
+-		return { ...result, status: 'continue', reason: 'confirming-steady-state', stableWindows: nextStableWindows };
+-	}
+-	if (sampleCpuMedianMs < MIN_SAMPLE_CPU_MS || sampleCpuMedianMs > MAX_SAMPLE_CPU_MS) {
+-		const nextIterations = Math.min(MAX_CALIBRATION_ITERATIONS, selectMeasurementIterations({
+-			sampleCpuMs: sampleCpuMedianMs,
+-			sampleWallMs: median(window.map(sample => Number(sample.sampleWallMs))),
+-		}, iterations));
+-		return {
+-			...result,
+-			status: 'recalibrate',
+-			reason: 'steady-state-outside-cpu-window',
+-			stableWindows: nextStableWindows,
+-			selectedIterations: iterations,
+-			nextIterations,
+-		};
+-	}
+-	return {
+-		...result,
+-		status: 'ready',
+-		reason: null,
+-		stableWindows: nextStableWindows,
+-		selectedIterations: iterations,
+-	};
+-}
+-
+-export function summarizeStability(results, limit = CPU_STABILITY_LIMIT) {
+-	const profiles = results.map(({ profile, summary }) => ({
+-		profile,
+-		cpuCv: summary.cpuCv,
+-		passed: summary.cpuCv <= limit,
+-	}));
+-	const failedProfiles = profiles.filter(result => !result.passed);
+-	return {
+-		profile: profiles.length === 1 ? profiles[0].profile : 'all-selected',
+-		cpuCv: Math.max(...profiles.map(result => result.cpuCv)),
+-		limit,
+-		passed: failedProfiles.length === 0,
+-		profiles,
+-		failedProfiles: failedProfiles.map(result => result.profile),
+-	};
+-}
+-
+-export function selectMeasurementIterations(calibration, currentIterations = 1) {
+-	const cpuMs = Number(calibration.sampleCpuMs);
+-	const wallMs = Number(calibration.sampleWallMs);
+-	const observedMs = cpuMs > 0 ? cpuMs : Math.max(wallMs, 0.001);
+-	return Math.max(1, Math.ceil(currentIterations * TARGET_SAMPLE_CPU_MS / observedMs));
+-}
+-
+-export function planCalibrationStage(samples, iterations) {
+-	if (!Array.isArray(samples) || samples.length === 0) throw new Error('calibration samples are required');
+-	const sampleCpuMedianMs = median(samples.map(sample => Number(sample.sampleCpuMs)));
+-	const sampleWallMedianMs = median(samples.map(sample => Number(sample.sampleWallMs)));
+-	const result = {
+-		iterations,
+-		sampleCpuMedianMs,
+-		sampleWallMedianMs,
+-		targetCpuMs: TARGET_SAMPLE_CPU_MS,
+-		minCpuMs: MIN_SAMPLE_CPU_MS,
+-		maxCpuMs: MAX_SAMPLE_CPU_MS,
+-	};
+-
+-	if (sampleCpuMedianMs >= MIN_SAMPLE_CPU_MS && sampleCpuMedianMs <= MAX_SAMPLE_CPU_MS) {
+-		return { ...result, status: 'ready', reason: null, selectedIterations: iterations };
+-	}
+-	if (sampleCpuMedianMs > MAX_SAMPLE_CPU_MS) {
+-		if (iterations === 1) {
+-			return { ...result, status: 'limited', reason: 'single-iteration-over-target', selectedIterations: 1 };
+-		}
+-		const nextIterations = Math.max(1, Math.floor(iterations * TARGET_SAMPLE_CPU_MS / sampleCpuMedianMs));
+-		return { ...result, status: 'continue', reason: null, nextIterations };
+-	}
+-	if (iterations >= MAX_CALIBRATION_ITERATIONS) {
+-		return {
+-			...result,
+-			status: 'limited',
+-			reason: 'max-iterations-reached',
+-			selectedIterations: MAX_CALIBRATION_ITERATIONS,
+-		};
+-	}
+-
+-	const estimatedIterations = selectMeasurementIterations({
+-		sampleCpuMs: sampleCpuMedianMs,
+-		sampleWallMs: sampleWallMedianMs,
+-	}, iterations);
+-	return {
+-		...result,
+-		status: 'continue',
+-		reason: estimatedIterations > MAX_CALIBRATION_ITERATIONS ? 'max-iterations-selected' : null,
+-		nextIterations: Math.min(MAX_CALIBRATION_ITERATIONS, Math.max(iterations + 1, estimatedIterations)),
+-	};
+-}
+-
+-async function measureRound(profile, fixture, iterations = 1, uplinkStrategy = 'auto', workerSource = null, downlinkStrategy = 'auto') {
+-	const cpuStart = process.cpuUsage();
+-	const wallStart = performance.now();
+-	let result;
+-	for (let i = 0; i < iterations; i++) {
+-		result = await executeProfile(profile, fixture, { captureOutput: false, trackProxy: false, uplinkStrategy, workerSource, downlinkStrategy });
+-	}
+-	const sampleWallMs = performance.now() - wallStart;
+-	const cpu = process.cpuUsage(cpuStart);
+-	const sampleCpuMs = (cpu.user + cpu.system) / 1000;
+-	return {
+-		cpuMs: Number((sampleCpuMs / iterations).toFixed(6)),
+-		wallMs: Number((sampleWallMs / iterations).toFixed(6)),
+-		sampleCpuMs: Number(sampleCpuMs.toFixed(6)),
+-		sampleWallMs: Number(sampleWallMs.toFixed(6)),
+-		iterations,
+-		downlinkStrategy,
+-		output: result.output,
+-	};
+-}
+-
+-async function calibrateMeasurementIterations(profile, fixture, uplinkStrategy, workerSource, downlinkStrategy) {
+-	let iterations = 1;
+-	const stages = [];
+-	for (let stage = 0; stage < MAX_CALIBRATION_STAGES; stage++) {
+-		const samples = [];
+-		for (let i = 0; i < CALIBRATION_SAMPLES; i++) {
+-			samples.push(await measureRound(profile, fixture, iterations, uplinkStrategy, workerSource, downlinkStrategy));
+-		}
+-		const decision = planCalibrationStage(samples, iterations);
+-		stages.push({ ...decision, samples });
+-		if (decision.status !== 'continue') {
+-			return {
+-				status: decision.status,
+-				reason: decision.reason,
+-				targetCpuMs: TARGET_SAMPLE_CPU_MS,
+-				minCpuMs: MIN_SAMPLE_CPU_MS,
+-				maxCpuMs: MAX_SAMPLE_CPU_MS,
+-				selectedIterations: decision.selectedIterations,
+-				sampleCpuMs: decision.sampleCpuMedianMs,
+-				sampleWallMs: decision.sampleWallMedianMs,
+-				iterations: decision.selectedIterations,
+-				output: samples[samples.length - 1].output,
+-				stages,
+-			};
+-		}
+-		iterations = decision.nextIterations;
+-	}
+-
+-	const lastStage = stages[stages.length - 1];
+-	return {
+-		status: 'limited',
+-		reason: 'max-calibration-stages-reached',
+-		targetCpuMs: TARGET_SAMPLE_CPU_MS,
+-		minCpuMs: MIN_SAMPLE_CPU_MS,
+-		maxCpuMs: MAX_SAMPLE_CPU_MS,
+-		selectedIterations: lastStage.iterations,
+-		sampleCpuMs: lastStage.sampleCpuMedianMs,
+-		sampleWallMs: lastStage.sampleWallMedianMs,
+-		iterations: lastStage.iterations,
+-		output: lastStage.samples[lastStage.samples.length - 1].output,
+-		stages,
+-	};
+-}
+-
+-async function stabilizeMeasurementIterations(profile, fixture, iterations, minimumWarmups, uplinkStrategy, workerSource, downlinkStrategy) {
+-	const maxRounds = Math.max(MAX_STEADY_STATE_ROUNDS, minimumWarmups);
+-	const requiredRounds = Math.max(MIN_STEADY_STATE_ROUNDS, minimumWarmups);
+-	const warmups = [];
+-	let stableWindows = 0;
+-	let decision = null;
+-	for (let round = 0; round < maxRounds; round++) {
+-		warmups.push(await measureRound(profile, fixture, iterations, uplinkStrategy, workerSource, downlinkStrategy));
+-		if (warmups.length < requiredRounds) continue;
+-		decision = planSteadyStateWindow(warmups, iterations, stableWindows, maxRounds);
+-		stableWindows = decision.stableWindows;
+-		if (decision.status !== 'continue') return { ...decision, warmups };
+-	}
+-	return {
+-		...(decision || {}),
+-		status: 'limited',
+-		reason: 'max-steady-state-rounds-reached',
+-		stableWindows,
+-		warmups,
+-	};
+-}
+-
+-function selectedProfiles(profile) {
+-	if (profile === 'all') return ALL_PROFILES;
+-	if (DIRECTIONS.includes(profile)) return ALL_PROFILES.filter(candidate => candidate.startsWith(`${profile}-`));
+-	return [profile];
+-}
+-
+-export function selectProfileExecutionMode(profile) {
+-	return selectedProfiles(profile).length === 1 ? 'in-process' : 'isolated-processes';
+-}
+-
+-export function planIsolatedProfileAttempt(exitStatus, stderr, attempt) {
+-	if (exitStatus === 0) return { status: 'complete', reason: null };
+-	const steadyStateUnavailable = String(stderr || '').includes('steady state unavailable: max-steady-state-rounds-reached');
+-	const reason = steadyStateUnavailable ? 'steady-state-unavailable' : 'child-process-failed';
+-	return {
+-		status: steadyStateUnavailable && attempt < MAX_ISOLATED_PROFILE_ATTEMPTS ? 'retry' : 'failed',
+-		reason,
+-	};
+-}
+-
+-export function validateIsolatedFingerprints(results) {
+-	if (!Array.isArray(results) || results.length === 0) throw new Error('isolated benchmark results are required');
+-	const profileProcesses = [];
+-	const processIds = new Set();
+-	let environmentFingerprint = null;
+-	for (const result of results) {
+-		const fingerprint = result.environmentFingerprint || {};
+-		const processId = fingerprint.processId;
+-		if (!Number.isSafeInteger(processId) || processId <= 0) throw new Error(`${result.profile}: invalid process id`);
+-		if (processIds.has(processId)) throw new Error(`${result.profile}: profiles must use a distinct process`);
+-		processIds.add(processId);
+-		profileProcesses.push({ profile: result.profile, processId });
+-		const comparable = { ...fingerprint };
+-		delete comparable.processId;
+-		if (!environmentFingerprint) environmentFingerprint = comparable;
+-		else if (JSON.stringify(comparable) !== JSON.stringify(environmentFingerprint)) {
+-			throw new Error(`${result.profile}: environment fingerprint mismatch`);
+-		}
+-	}
+-	return { environmentFingerprint, profileProcesses };
+-}
+-
+-function readPowerMode() {
+-	if (platform() !== 'win32') return 'unavailable';
+-	const result = spawnSync('powercfg', ['/getactivescheme'], { encoding: 'utf8', windowsHide: true });
+-	if (result.status !== 0) return 'unavailable';
+-	const guid = result.stdout.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)?.[0]?.toLowerCase();
+-	if (!guid) return 'unavailable';
+-	const knownModes = {
+-		'381b4222-f694-41f0-9685-ff5bb260df2e': 'balanced',
+-		'8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c': 'high-performance',
+-		'a1841308-3541-4fab-bc81-f71556f20b4a': 'power-saver',
+-		'e9a42b02-d5df-448d-aa00-03f14749eb61': 'ultimate-performance',
+-	};
+-	return `${knownModes[guid] || 'custom'}:${guid}`;
+-}
+-
+-async function environmentFingerprint(fixture, workerSource) {
+-	const benchmarkSource = await readFile(new URL('./xhttp_stream_benchmark.mjs', import.meta.url));
+-	const cpuList = cpus();
+-	return {
+-		node: process.version,
+-		platform: platform(),
+-		arch: arch(),
+-		cpuModel: cpuList[0]?.model || 'unknown',
+-		logicalCores: cpuList.length || 'unknown',
+-		powerMode: readPowerMode(),
+-		processId: process.pid,
+-		benchmarkSha256: sha256(benchmarkSource),
+-		fixtureSha256: fixture.sha256,
+-		workerSourceSha256: sha256(workerSource),
+-	};
+-}
+-
+-function normalizeBenchmarkOptions(options) {
+-	return {
+-		...parseBenchmarkOptions([]),
+-		...options,
+-		warmup: positiveInteger(options.warmup ?? DEFAULT_WARMUP, 'warmup'),
+-		rounds: positiveInteger(options.rounds ?? DEFAULT_ROUNDS, 'rounds'),
+-		totalBytes: positiveInteger(options.totalBytes ?? DEFAULT_TOTAL_BYTES, 'totalBytes'),
+-	};
+-}
+-
+-async function runBenchmarkInProcess(normalized) {
+-	const profiles = selectedProfiles(normalized.profile);
+-	const fixture = createDeterministicFixture(normalized.totalBytes);
+-	const { source: workerSource } = await loadWorkerInternals(normalized.workerSource);
+-	const results = [];
+-
+-	for (const profile of profiles) {
+-		await measureRound(profile, fixture, 1, normalized.uplinkStrategy, normalized.workerSource, normalized.downlinkStrategy);
+-		const calibration = await calibrateMeasurementIterations(profile, fixture, normalized.uplinkStrategy, normalized.workerSource, normalized.downlinkStrategy);
+-		let measurementIterations = calibration.selectedIterations;
+-		const steadyStatePhases = [];
+-		let steadyState = null;
+-		for (let attempt = 0; attempt <= MAX_STEADY_STATE_RECALIBRATIONS; attempt++) {
+-			steadyState = await stabilizeMeasurementIterations(
+-				profile,
+-				fixture,
+-				measurementIterations,
+-				normalized.warmup,
+-				normalized.uplinkStrategy,
+-				normalized.workerSource,
+-				normalized.downlinkStrategy,
+-			);
+-			steadyStatePhases.push({ ...steadyState, iterations: measurementIterations });
+-			if (steadyState.status === 'ready') break;
+-			if (steadyState.status !== 'recalibrate') {
+-				throw Object.assign(new Error(`${profile}: steady state unavailable: ${steadyState.reason}`), { steadyState });
+-			}
+-			if (attempt === MAX_STEADY_STATE_RECALIBRATIONS) {
+-				throw Object.assign(new Error(`${profile}: steady state unavailable: max-steady-state-recalibrations-reached`), {
+-					steadyState: { ...steadyState, status: 'limited', reason: 'max-steady-state-recalibrations-reached' },
+-				});
+-			}
+-			measurementIterations = steadyState.nextIterations;
+-		}
+-		const warmups = steadyStatePhases.flatMap(phase => phase.warmups);
+-		const measurementRounds = [];
+-		const enforceMeasurementStability = normalized.enforceMeasurementStability !== false;
+-		const maxMeasurementRounds = enforceMeasurementStability
+-			? normalized.rounds * MAX_MEASUREMENT_ROUND_MULTIPLIER
+-			: normalized.rounds;
+-		let measurement = null;
+-		while (measurementRounds.length < maxMeasurementRounds) {
+-			measurementRounds.push(await measureRound(profile, fixture, measurementIterations, normalized.uplinkStrategy, normalized.workerSource, normalized.downlinkStrategy));
+-			if (!enforceMeasurementStability && measurementRounds.length >= normalized.rounds) {
+-				measurement = {
+-					status: 'disabled',
+-					reason: 'explicitly-disabled',
+-					selectedStart: 0,
+-					discardedRounds: 0,
+-					windowSize: normalized.rounds,
+-				};
+-				break;
+-			}
+-			measurement = planMeasurementWindow(measurementRounds, normalized.rounds, maxMeasurementRounds);
+-			if (measurement.status === 'ready') break;
+-			if (measurement.status === 'limited') {
+-				throw Object.assign(new Error(`${profile}: measurement state unavailable: ${measurement.reason}`), { measurement, measurementRounds });
+-			}
+-		}
+-		const rounds = measurementRounds.slice(measurement.selectedStart);
+-		const proxyRun = await executeProfile(profile, fixture, { captureOutput: false, trackProxy: true, uplinkStrategy: normalized.uplinkStrategy, workerSource: normalized.workerSource, downlinkStrategy: normalized.downlinkStrategy });
+-		const correctnessRun = await executeProfile(profile, fixture, { captureOutput: true, trackProxy: false, uplinkStrategy: normalized.uplinkStrategy, workerSource: normalized.workerSource, downlinkStrategy: normalized.downlinkStrategy });
+-		const outputList = profile.startsWith('bidirectional')
+-			? [correctnessRun.output.uplink, correctnessRun.output.downlink]
+-			: [correctnessRun.output];
+-		for (const output of outputList) {
+-			if (output.totalBytes !== fixture.bytes.byteLength || output.sha256 !== fixture.sha256) {
+-				throw new Error(`${profile} output mismatch`);
+-			}
+-		}
+-		results.push({
+-			profile,
+-			chunkBytes: parseProfile(profile).chunkBytes,
+-			calibration,
+-			steadyState: {
+-				status: steadyState.status,
+-				reason: steadyState.reason,
+-				stableWindows: steadyState.stableWindows,
+-				cpuCv: steadyState.cpuCv,
+-				trendRatio: steadyState.trendRatio,
+-				sampleCpuMedianMs: steadyState.sampleCpuMedianMs,
+-				phases: steadyStatePhases,
+-			},
+-			measurementIterations,
+-			warmups,
+-			measurement,
+-			measurementRounds,
+-			rounds,
+-			summary: summarizeRounds(rounds),
+-			output: correctnessRun.output,
+-			proxy: proxyRun.proxy,
+-			processId: process.pid,
+-		});
+-	}
+-
+-	const stability = summarizeStability(results);
+-	const result = {
+-		schemaVersion: 1,
+-		capturedAt: new Date().toISOString(),
+-		config: {
+-			profile: normalized.profile,
+-			warmup: normalized.warmup,
+-			rounds: normalized.rounds,
+-			totalBytesPerDirection: normalized.totalBytes,
+-			chunkBytes: [...CHUNK_SIZES.values()],
+-			cpuMeasurementObserver: 'off',
+-			forcedGcBetweenRounds: false,
+-			cpuSampleTargetMs: TARGET_SAMPLE_CPU_MS,
+-			cpuSampleWindowMs: [MIN_SAMPLE_CPU_MS, MAX_SAMPLE_CPU_MS],
+-			steadyStateWindow: STEADY_STATE_WINDOW,
+-			minSteadyStateRounds: MIN_STEADY_STATE_ROUNDS,
+-			requiredSteadyStateWindows: REQUIRED_STEADY_STATE_WINDOWS,
+-			maxSteadyStateRounds: MAX_STEADY_STATE_ROUNDS,
+-			maxMeasurementRoundMultiplier: MAX_MEASUREMENT_ROUND_MULTIPLIER,
+-			measurementStability: normalized.enforceMeasurementStability === false ? 'disabled' : 'required',
+-			steadyStateCvLimit: STEADY_STATE_CV_LIMIT,
+-			steadyStateTrendLimit: STEADY_STATE_TREND_LIMIT,
+-			uplinkStrategy: normalized.uplinkStrategy,
+-			downlinkStrategy: normalized.downlinkStrategy,
+-			workerSource: normalized.workerSource ? 'provided' : 'default',
+-			profileIsolation: 'in-process',
+-		},
+-		environmentFingerprint: await environmentFingerprint(fixture, workerSource),
+-		stability,
+-		profiles: results,
+-	};
+-	if (normalized.enforceStability !== false && !stability.passed) {
+-		const failures = stability.profiles
+-			.filter(profile => !profile.passed)
+-			.map(profile => `${profile.profile}=${profile.cpuCv}`)
+-			.join(', ');
+-		throw Object.assign(new Error(`CPU coefficient of variation exceeds ${stability.limit}: ${failures}`), { benchmarkResult: result });
+-	}
+-	return result;
+-}
+-
+-function runIsolatedProfile(profile, normalized) {
+-	const scriptPath = fileURLToPath(import.meta.url);
+-	const args = [
+-		scriptPath,
+-		'--profile', profile,
+-		'--warmup', `${normalized.warmup}`,
+-		'--rounds', `${normalized.rounds}`,
+-		'--total-bytes', `${normalized.totalBytes}`,
+-		'--uplink-strategy', normalized.uplinkStrategy,
+-		'--downlink-strategy', normalized.downlinkStrategy,
+-	];
+-	if (normalized.workerSource) args.push('--worker-source', normalized.workerSource);
+-	for (let attempt = 1; attempt <= MAX_ISOLATED_PROFILE_ATTEMPTS; attempt++) {
+-		const child = spawnSync(process.execPath, args, {
+-			encoding: 'utf8',
+-			env: { ...process.env, XHTTP_BENCHMARK_CHILD: '1' },
+-			maxBuffer: 16 * 1024 * 1024,
+-			windowsHide: true,
+-		});
+-		const decision = planIsolatedProfileAttempt(child.status, child.stderr, attempt);
+-		if (decision.status === 'retry') continue;
+-		if (decision.status === 'failed') {
+-			const failure = [child.stderr, child.error?.message].filter(Boolean).join('\n').trim();
+-			throw new Error(`${profile}: isolated benchmark failed: ${failure || `exit ${child.status ?? 'unknown'}`}`);
+-		}
+-		const result = JSON.parse(child.stdout);
+-		if (result.profiles.length !== 1 || result.profiles[0].profile !== profile) {
+-			throw new Error(`${profile}: isolated benchmark returned unexpected profile`);
+-		}
+-		return { ...result, isolationAttempts: attempt };
+-	}
+-	throw new Error(`${profile}: isolated benchmark attempts exhausted`);
+-}
+-
+-async function runBenchmarkIsolated(normalized) {
+-	const profiles = selectedProfiles(normalized.profile);
+-	const childResults = profiles.map(profile => ({
+-		profile,
+-		...runIsolatedProfile(profile, normalized),
+-	}));
+-	const { environmentFingerprint, profileProcesses } = validateIsolatedFingerprints(childResults);
+-	const results = childResults.map(result => result.profiles[0]);
+-	const stability = summarizeStability(results);
+-	const result = {
+-		schemaVersion: 1,
+-		capturedAt: new Date().toISOString(),
+-		config: {
+-			...childResults[0].config,
+-			profile: normalized.profile,
+-			profileIsolation: 'isolated-processes',
+-			maxIsolatedProfileAttempts: MAX_ISOLATED_PROFILE_ATTEMPTS,
+-		},
+-		environmentFingerprint,
+-		profileProcesses,
+-		profileAttempts: childResults.map(result => ({ profile: result.profile, attempts: result.isolationAttempts })),
+-		stability,
+-		profiles: results,
+-	};
+-	if (normalized.enforceStability !== false && !stability.passed) {
+-		const failures = stability.profiles
+-			.filter(profile => !profile.passed)
+-			.map(profile => `${profile.profile}=${profile.cpuCv}`)
+-			.join(', ');
+-		throw Object.assign(new Error(`CPU coefficient of variation exceeds ${stability.limit}: ${failures}`), { benchmarkResult: result });
+-	}
+-	return result;
+-}
+-
+-export async function runBenchmark(options) {
+-	const normalized = normalizeBenchmarkOptions(options);
+-	return selectProfileExecutionMode(normalized.profile) === 'isolated-processes'
+-		? runBenchmarkIsolated(normalized)
+-		: runBenchmarkInProcess(normalized);
+-}
+-
+-async function main() {
+-	const options = parseBenchmarkOptions(process.argv.slice(2));
+-	if (process.env.XHTTP_BENCHMARK_CHILD === '1') options.enforceStability = false;
+-	let result;
+-	try {
+-		result = await runBenchmark(options);
+-	} catch (error) {
+-		if (options.output && error.benchmarkResult) {
+-			await writeFile(options.output, `${JSON.stringify(error.benchmarkResult, null, 2)}\n`);
+-		}
+-		throw error;
+-	}
+-	if (options.output) await writeFile(options.output, `${JSON.stringify(result, null, 2)}\n`);
+-	const display = options.output
+-		? {
+-			output: options.output,
+-			stability: result.stability,
+-			profiles: result.profiles.map(({ profile, summary }) => ({ profile, summary })),
+-		}
+-		: result;
+-	process.stdout.write(`${JSON.stringify(display, null, 2)}\n`);
+-}
+-
+-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+-	main().catch(error => {
+-		process.stderr.write(`${error?.stack || error}\n`);
+-		process.exitCode = 1;
+-	});
+-}
+diff --git b/xhttp_stream_benchmark.test.mjs a/xhttp_stream_benchmark.test.mjs
+deleted file mode 100644
+index 4153842..0000000
+--- b/xhttp_stream_benchmark.test.mjs
++++ /dev/null
+@@ -1,126 +0,0 @@
+-import assert from 'node:assert/strict';
+-import { spawnSync } from 'node:child_process';
+-import test from 'node:test';
+-import { fileURLToPath } from 'node:url';
+-import {
+-	createDeterministicFixture,
+-	instrumentLegacyGrainCopies,
+-	parseBenchmarkOptions,
+-	runProfileOnce,
+-	runBenchmark,
+-	selectMeasurementIterations,
+-	summarizeRounds,
+-	summarizeStability,
+-} from './xhttp_stream_benchmark.mjs';
+-
+-test('benchmark 参数固定默认工作量并拒绝未知 profile', () => {
+-	assert.deepEqual(parseBenchmarkOptions([]), {
+-		profile: 'all',
+-		warmup: 2,
+-		rounds: 7,
+-		output: null,
+-		totalBytes: 16 * 1024 * 1024,
+-		uplinkStrategy: 'auto',
+-		downlinkStrategy: 'auto',
+-		workerSource: null,
+-	});
+-	assert.equal(parseBenchmarkOptions(['--worker-source', 'tasks/before.js']).workerSource, 'tasks/before.js');
+-	assert.equal(parseBenchmarkOptions(['--downlink-strategy', 'shared-grain']).downlinkStrategy, 'shared-grain');
+-	assert.throws(() => parseBenchmarkOptions(['--profile', 'packet-up']), /Unknown profile/);
+-	assert.throws(() => parseBenchmarkOptions(['--rounds', '0']), /positive integer/);
+-	assert.throws(() => parseBenchmarkOptions(['--uplink-strategy', 'unknown']), /Unknown uplink strategy/);
+-	assert.throws(() => parseBenchmarkOptions(['--downlink-strategy', 'unknown']), /Unknown downlink strategy/);
+-});
+-
+-test('仅代理轮为旧 Grain slice 注入复制计数', () => {
+-	const legacy = 'const output = pendingBuffer.subarray(0, pendingBytes).slice();';
+-	const instrumented = instrumentLegacyGrainCopies(legacy);
+-	assert.match(instrumented, /__xhttpBenchmarkGrainCopyObserver/);
+-	assert.match(instrumented, /outputView\.slice\(\)/);
+-	assert.equal(instrumentLegacyGrainCopies('const output = pendingBuffer;'), 'const output = pendingBuffer;');
+-});
+-
+-test('固定夹具使用相同种子生成相同摘要', () => {
+-	const first = createDeterministicFixture(64 * 1024);
+-	const second = createDeterministicFixture(64 * 1024);
+-	assert.equal(first.sha256, second.sha256);
+-	assert.deepEqual(first.bytes, second.bytes);
+-});
+-
+-test('摘要包含 CPU 中位数、变异系数和 wall 中位数', () => {
+-	assert.deepEqual(summarizeRounds([
+-		{ cpuMs: 10, wallMs: 20 },
+-		{ cpuMs: 12, wallMs: 22 },
+-		{ cpuMs: 11, wallMs: 21 },
+-	]), {
+-		cpuMedianMs: 11,
+-		cpuMeanMs: 11,
+-		cpuCv: Number((Math.sqrt(2 / 3) / 11).toFixed(6)),
+-		wallMedianMs: 21,
+-	});
+-});
+-
+-test('稳定性门禁覆盖全部选中的 profile', () => {
+-	const stability = summarizeStability([
+-		{ profile: 'uplink-1kib', summary: { cpuCv: 0.05 } },
+-		{ profile: 'downlink-1kib', summary: { cpuCv: 0.11 } },
+-	]);
+-	assert.equal(stability.profile, 'all-selected');
+-	assert.equal(stability.cpuCv, 0.11);
+-	assert.equal(stability.passed, false);
+-	assert.deepEqual(stability.failedProfiles, ['downlink-1kib']);
+-	assert.deepEqual(stability.profiles, [
+-		{ profile: 'uplink-1kib', cpuCv: 0.05, passed: true },
+-		{ profile: 'downlink-1kib', cpuCv: 0.11, passed: false },
+-	]);
+-});
+-
+-test('测量迭代校准优先使用 CPU 并在 CPU 不可用时回退 wall', () => {
+-	assert.equal(selectMeasurementIterations({ sampleCpuMs: 16, sampleWallMs: 3 }), 125);
+-	assert.equal(selectMeasurementIterations({ sampleCpuMs: 0, sampleWallMs: 6 }), 334);
+-});
+-
+-test('64 KiB 上行基准使用完成等待而不进入小块背压', async () => {
+-	const fixture = createDeterministicFixture(128 * 1024);
+-	const result = await runProfileOnce('uplink-64kib', fixture, { trackProxy: true });
+-	assert.equal(result.proxy.sends, 2);
+-	assert.equal(result.proxy.completionPromisesProxy, 2);
+-	assert.equal(result.proxy.backpressureWaitsProxy, 0);
+-});
+-
+-test('小型基准生成完整环境、逐轮、代理和字节正确性字段', async () => {
+-	const result = await runBenchmark({
+-		profile: 'downlink-1kib',
+-		warmup: 1,
+-		rounds: 3,
+-		output: null,
+-		totalBytes: 128 * 1024,
+-		downlinkStrategy: 'shared-grain',
+-		enforceStability: false,
+-		enforceMeasurementStability: false,
+-	});
+-	assert.equal(result.schemaVersion, 1);
+-	assert.equal(result.config.totalBytesPerDirection, 128 * 1024);
+-	assert.equal(result.config.downlinkStrategy, 'shared-grain');
+-	assert.equal(result.profiles.length, 1);
+-	assert.equal(result.profiles[0].rounds.length, 3);
+-	assert.ok(result.profiles[0].rounds.every(round => round.downlinkStrategy === 'shared-grain'));
+-	assert.equal(result.profiles[0].output.totalBytes, 128 * 1024);
+-	assert.match(result.profiles[0].output.sha256, /^[a-f0-9]{64}$/);
+-	assert.ok(Number.isFinite(result.profiles[0].proxy.arrayBuffersPeakBytes));
+-	assert.equal(result.profiles[0].proxy.allocatedBuffersProxy, 4);
+-	assert.equal(result.profiles[0].proxy.grainCopiedBytesProxy, 0);
+-	for (const key of ['node', 'platform', 'arch', 'cpuModel', 'logicalCores', 'powerMode', 'benchmarkSha256', 'fixtureSha256', 'workerSourceSha256']) {
+-		assert.ok(result.environmentFingerprint[key], `缺少 ${key}`);
+-	}
+-});
+-
+-test('CLI 参数错误以非零状态退出', () => {
+-	const result = spawnSync(process.execPath, [
+-		fileURLToPath(new URL('./xhttp_stream_benchmark.mjs', import.meta.url)),
+-		'--profile',
+-		'packet-down',
+-	], { encoding: 'utf8' });
+-	assert.notEqual(result.status, 0);
+-	assert.match(result.stderr, /Unknown profile/);
+-});
+diff --git b/xhttp_stream_downlink.test.mjs a/xhttp_stream_downlink.test.mjs
+deleted file mode 100644
+index 8592c8f..0000000
+--- b/xhttp_stream_downlink.test.mjs
++++ /dev/null
+@@ -1,100 +0,0 @@
+-import assert from 'node:assert/strict';
+-import { readFile } from 'node:fs/promises';
+-import test from 'node:test';
+-
+-const source = await readFile(new URL('./_worker.js', import.meta.url), 'utf8');
+-if (!globalThis.WebSocket) globalThis.WebSocket = { OPEN: 1, CLOSING: 2, CLOSED: 3 };
+-const moduleUrl = `data:text/javascript;base64,${Buffer.from(`${source}\nexport { 创建下行Grain发送器 };`).toString('base64')}`;
+-const { 创建下行Grain发送器 } = await import(moduleUrl);
+-
+-function deferred() {
+-	let resolve, reject;
+-	const promise = new Promise((resolvePromise, rejectPromise) => {
+-		resolve = resolvePromise;
+-		reject = rejectPromise;
+-	});
+-	return { promise, resolve, reject };
+-}
+-
+-test('XHTTP 下行将小块合并为完整 Grain 并保留响应头', async () => {
+-	const sent = [];
+-	const webSocket = {
+-		readyState: WebSocket.OPEN,
+-		async send(data) { sent.push(Uint8Array.from(data)) },
+-	};
+-	const sender = 创建下行Grain发送器(webSocket, new Uint8Array([9, 8]));
+-	await sender.发送(new Uint8Array(16 * 1024).fill(1));
+-	await sender.发送(new Uint8Array(16 * 1024).fill(2));
+-	await sender.发送(new Uint8Array(137).fill(3));
+-	await sender.flush();
+-	assert.deepEqual(sent.map(chunk => chunk.byteLength), [32 * 1024, 139]);
+-	assert.deepEqual(sent[0].subarray(0, 2), new Uint8Array([9, 8]));
+-	assert.ok(sent[0].subarray(2, 2 + 16 * 1024).every(byte => byte === 1));
+-	assert.ok(sent[1].subarray(2).every(byte => byte === 3));
+-});
+-
+-test('XHTTP 下行仅在合并缓冲发送完成后复用 backing buffer', async () => {
+-	const firstGate = deferred();
+-	const retained = [];
+-	let sends = 0;
+-	const webSocket = {
+-		readyState: WebSocket.OPEN,
+-		发送后可复用缓冲: true,
+-		send(data) {
+-			retained.push(data);
+-			sends++;
+-			return sends === 1 ? firstGate.promise : Promise.resolve();
+-		},
+-	};
+-	const sender = 创建下行Grain发送器(webSocket);
+-	await sender.发送(new Uint8Array(16 * 1024).fill(1));
+-	const firstFlush = sender.发送(new Uint8Array(16 * 1024).fill(1));
+-	await Promise.resolve();
+-
+-	assert.deepEqual(sender.状态(), { pendingBytes: 0, sending: true, reusableBuffers: 0 });
+-	await sender.发送(new Uint8Array(16 * 1024).fill(2));
+-	const secondFlush = sender.发送(new Uint8Array(16 * 1024).fill(2));
+-	assert.equal(retained.length, 1);
+-	assert.ok(retained[0].every(byte => byte === 1));
+-
+-	firstGate.resolve();
+-	await Promise.all([firstFlush, secondFlush]);
+-	assert.deepEqual(sender.状态(), { pendingBytes: 0, sending: false, reusableBuffers: 1 });
+-	assert.ok(retained[0].every(byte => byte === 1));
+-	assert.ok(retained[1].every(byte => byte === 2));
+-
+-	await sender.发送(new Uint8Array(16 * 1024).fill(3));
+-	await sender.发送(new Uint8Array(16 * 1024).fill(3));
+-	assert.equal(retained[2].buffer, retained[0].buffer);
+-	assert.ok(retained[2].every(byte => byte === 3));
+-});
+-
+-test('XHTTP 下行连续发送复用的 backing buffer 数量有界', async () => {
+-	const buffers = new Set();
+-	const webSocket = {
+-		readyState: WebSocket.OPEN,
+-		发送后可复用缓冲: true,
+-		async send(data) { buffers.add(data.buffer) },
+-	};
+-	const sender = 创建下行Grain发送器(webSocket);
+-	for (let i = 0; i < 8; i++) {
+-		await sender.发送(new Uint8Array(16 * 1024).fill(i));
+-		await sender.发送(new Uint8Array(16 * 1024).fill(i));
+-	}
+-	assert.ok(buffers.size <= 2, `backing buffer 数量失控: ${buffers.size}`);
+-	sender.取消();
+-	assert.deepEqual(sender.状态(), { pendingBytes: 0, sending: false, reusableBuffers: 0 });
+-});
+-
+-test('XHTTP 下行发送失败不会复用未确认的合并缓冲', async () => {
+-	const webSocket = {
+-		readyState: WebSocket.OPEN,
+-		发送后可复用缓冲: true,
+-		async send() { throw new Error('send failed') },
+-	};
+-	const sender = 创建下行Grain发送器(webSocket);
+-	await sender.发送(new Uint8Array(16 * 1024));
+-	await assert.rejects(sender.发送(new Uint8Array(16 * 1024)), /send failed/);
+-	assert.equal(sender.状态().reusableBuffers, 0);
+-	sender.取消();
+-});
+diff --git b/xhttp_stream_lifecycle.test.mjs a/xhttp_stream_lifecycle.test.mjs
+deleted file mode 100644
+index 791a238..0000000
+--- b/xhttp_stream_lifecycle.test.mjs
++++ /dev/null
+@@ -1,84 +0,0 @@
+-import assert from 'node:assert/strict';
+-import { readFile } from 'node:fs/promises';
+-import test from 'node:test';
+-
+-if (!globalThis.WebSocket) globalThis.WebSocket = { OPEN: 1, CLOSING: 2, CLOSED: 3 };
+-
+-const source = await readFile(new URL('./_worker.js', import.meta.url), 'utf8');
+-const moduleUrl = `data:text/javascript;base64,${Buffer.from(`${source}\nexport { 处理XHTTP请求 };`).toString('base64')}`;
+-const { 处理XHTTP请求 } = await import(moduleUrl);
+-
+-function 创建VLESS首包(UUID, 域名 = 'target.example') {
+-	const UUID字节 = Uint8Array.from(UUID.replaceAll('-', '').match(/../g), 字节 => Number.parseInt(字节, 16));
+-	const 域名字节 = new TextEncoder().encode(域名);
+-	const 首包 = new Uint8Array(1 + 16 + 1 + 1 + 2 + 1 + 1 + 域名字节.byteLength);
+-	let offset = 0;
+-	首包[offset++] = 0;
+-	首包.set(UUID字节, offset);
+-	offset += UUID字节.byteLength;
+-	首包[offset++] = 0;
+-	首包[offset++] = 1;
+-	首包[offset++] = 1;
+-	首包[offset++] = 187;
+-	首包[offset++] = 2;
+-	首包[offset++] = 域名字节.byteLength;
+-	首包.set(域名字节, offset);
+-	return 首包;
+-}
+-
+-test('XHTTP 后台写入失败会取消仍在等待的请求读取', async () => {
+-	const UUID = '11111111-1111-4111-8111-111111111111';
+-	let 上传控制器;
+-	let 上传已取消 = false;
+-	let 完成取消;
+-	const 上传取消完成 = new Promise(resolve => {
+-		完成取消 = resolve;
+-	});
+-	const 上传流 = new ReadableStream({
+-		start(controller) {
+-			上传控制器 = controller;
+-			controller.enqueue(创建VLESS首包(UUID));
+-		},
+-		cancel() {
+-			上传已取消 = true;
+-			完成取消();
+-		},
+-	});
+-	const request = new Request('https://worker.example/video/test', {
+-		method: 'POST',
+-		body: 上传流,
+-		duplex: 'half',
+-	});
+-	Object.defineProperty(request, 'fetcher', {
+-		value: {
+-			connect() {
+-				let 下行控制器;
+-				return {
+-					opened: Promise.resolve(),
+-					closed: new Promise(() => { }),
+-					readable: new ReadableStream({ start(controller) { 下行控制器 = controller } }),
+-					writable: new WritableStream({
+-						write() {
+-							throw new Error('simulated upstream write failure');
+-						},
+-					}),
+-					close() {
+-						try { 下行控制器.close() } catch (e) { }
+-					},
+-				};
+-			},
+-		},
+-	});
+-	const response = await 处理XHTTP请求(request, UUID, { 反代IP: '127.0.0.1' });
+-	await new Promise(resolve => setTimeout(resolve, 0));
+-	上传控制器.enqueue(new Uint8Array(1024));
+-
+-	await Promise.race([
+-		上传取消完成,
+-		new Promise((_, reject) => setTimeout(() => reject(new Error('request read remained pending')), 250)),
+-	]);
+-	const responseResult = await response.body.getReader().read();
+-
+-	assert.equal(上传已取消, true);
+-	assert.equal(responseResult.done, true);
+-});
+diff --git b/xhttp_stream_uplink.test.mjs a/xhttp_stream_uplink.test.mjs
+deleted file mode 100644
+index 47cc9b7..0000000
+--- b/xhttp_stream_uplink.test.mjs
++++ /dev/null
+@@ -1,169 +0,0 @@
+-import assert from 'node:assert/strict';
+-import { readFile } from 'node:fs/promises';
+-import test from 'node:test';
+-
+-const source = await readFile(new URL('./_worker.js', import.meta.url), 'utf8');
+-if (!globalThis.WebSocket) globalThis.WebSocket = { OPEN: 1, CLOSING: 2, CLOSED: 3 };
+-const moduleUrl = `data:text/javascript;base64,${Buffer.from(`${source}\nexport { 创建上行写入队列 };`).toString('base64')}`;
+-const { 创建上行写入队列 } = await import(moduleUrl);
+-
+-function deferred() {
+-	let resolve, reject;
+-	const promise = new Promise((resolvePromise, rejectPromise) => {
+-		resolve = resolvePromise;
+-		reject = rejectPromise;
+-	});
+-	return { promise, resolve, reject };
+-}
+-
+-function createUploadQueue(writer, overrides = {}) {
+-	let currentWriter = writer;
+-	let closeError = null;
+-	const queue = 创建上行写入队列({
+-		获取写入器: () => currentWriter,
+-		释放写入器() { },
+-		重试连接: overrides.retry
+-			? async () => { currentWriter = await overrides.retry() }
+-			: null,
+-		关闭连接: error => { closeError = error },
+-		名称: 'XHTTP测试上行',
+-	});
+-	return { queue, getCloseError: () => closeError };
+-}
+-
+-test('XHTTP 上行在 64 KiB 或 64 条达到高水位', () => {
+-	const writer = { async write() { } };
+-	const bytesQueue = createUploadQueue(writer).queue;
+-	for (let i = 0; i < 4; i++) assert.equal(bytesQueue.写入(new Uint8Array(16 * 1024)), true);
+-	assert.equal(bytesQueue.达到高水位(), true);
+-	assert.deepEqual(bytesQueue.状态(), { bytes: 64 * 1024, items: 4, high: true, low: false });
+-	bytesQueue.清空();
+-
+-	const itemsQueue = createUploadQueue(writer).queue;
+-	for (let i = 0; i < 64; i++) assert.equal(itemsQueue.写入(new Uint8Array(1)), true);
+-	assert.equal(itemsQueue.达到高水位(), true);
+-	assert.deepEqual(itemsQueue.状态(), { bytes: 64, items: 64, high: true, low: false });
+-	itemsQueue.清空();
+-});
+-
+-test('XHTTP 上行慢 writer 只在 16 KiB 且不超过 16 条时恢复，并形成合包', async () => {
+-	const gate = deferred();
+-	const writes = [];
+-	const writer = {
+-		async write(data) {
+-			writes.push(Uint8Array.from(data));
+-			await gate.promise;
+-		},
+-	};
+-	const { queue } = createUploadQueue(writer);
+-	const expected = new Uint8Array(64 * 1024);
+-	for (let i = 0; i < 64; i++) {
+-		expected.fill(i, i * 1024, (i + 1) * 1024);
+-		assert.equal(queue.写入(expected.subarray(i * 1024, (i + 1) * 1024)), true);
+-	}
+-	assert.equal(queue.达到高水位(), true);
+-	let resumed = false;
+-	const lowPromise = queue.等待低水位().then(() => { resumed = true });
+-	await Promise.resolve();
+-	assert.equal(resumed, false);
+-	gate.resolve();
+-	await lowPromise;
+-	const lowState = queue.状态();
+-	assert.ok(lowState.bytes <= 16 * 1024);
+-	assert.ok(lowState.items <= 16);
+-	await queue.等待空();
+-	assert.equal(writes.length, 4);
+-	assert.deepEqual(Buffer.concat(writes.map(chunk => Buffer.from(chunk))), Buffer.from(expected));
+-});
+-
+-test('XHTTP 上行低水位要求字节和条目条件同时成立', async () => {
+-	const gate = deferred();
+-	const { queue } = createUploadQueue({ write: () => gate.promise });
+-	for (let i = 0; i < 17; i++) queue.写入(new Uint8Array(1024));
+-	let resumed = false;
+-	const lowPromise = queue.等待低水位().then(() => { resumed = true });
+-	await Promise.resolve();
+-	assert.equal(resumed, false);
+-	gate.resolve();
+-	await lowPromise;
+-	assert.equal(queue.状态().low, true);
+-});
+-
+-test('XHTTP 上行混合块按序且恰好一次写入', async () => {
+-	const writes = [];
+-	const { queue } = createUploadQueue({ async write(data) { writes.push(Uint8Array.from(data)) } });
+-	const chunks = [
+-		new Uint8Array(1024).fill(1),
+-		new Uint8Array(15 * 1024).fill(2),
+-		new Uint8Array(64 * 1024).fill(3),
+-	];
+-	for (const chunk of chunks) assert.equal(queue.写入(chunk), true);
+-	await queue.等待空();
+-	assert.deepEqual(Buffer.concat(writes.map(chunk => Buffer.from(chunk))), Buffer.concat(chunks.map(chunk => Buffer.from(chunk))));
+-});
+-
+-test('XHTTP 上行整 64 KiB 块可沿既有路径等待写入完成', async () => {
+-	const gate = deferred();
+-	const { queue } = createUploadQueue({ write: () => gate.promise });
+-	let completed = false;
+-	const writing = queue.直接写入并等待(new Uint8Array(64 * 1024)).then(() => { completed = true });
+-	await Promise.resolve();
+-	assert.equal(completed, false);
+-	gate.resolve();
+-	await writing;
+-	assert.equal(completed, true);
+-	assert.deepEqual(queue.状态(), { bytes: 0, items: 0, high: false, low: true });
+-});
+-
+-test('XHTTP 上行失败前未写数据按既有契约重试一次', async () => {
+-	const expected = new Uint8Array(4096).fill(7);
+-	let retries = 0;
+-	const writes = [];
+-	const firstWriter = { async write() { throw new Error('first write failed') } };
+-	const secondWriter = { async write(data) { writes.push(Uint8Array.from(data)) } };
+-	const { queue, getCloseError } = createUploadQueue(firstWriter, {
+-		async retry() {
+-			retries++;
+-			return secondWriter;
+-		},
+-	});
+-	queue.写入(expected, true);
+-	await queue.等待空();
+-	assert.equal(retries, 1);
+-	assert.equal(getCloseError(), null);
+-	assert.deepEqual(writes, [expected]);
+-});
+-
+-test('XHTTP 上行写入与重试失败会拒绝等待者并关闭连接', async () => {
+-	const { queue, getCloseError } = createUploadQueue({ async write() { throw new Error('write failed') } }, {
+-		async retry() { throw new Error('retry failed') },
+-	});
+-	queue.写入(new Uint8Array(1024), true);
+-	await assert.rejects(queue.等待空(), /retry failed/);
+-	assert.match(getCloseError()?.message || '', /retry failed/);
+-});
+-
+-test('XHTTP 上行大块直写重试失败会拒绝调用并关闭连接', async () => {
+-	const { queue, getCloseError } = createUploadQueue({ async write() { throw new Error('write failed') } }, {
+-		async retry() { throw new Error('retry failed') },
+-	});
+-	await assert.rejects(queue.直接写入并等待(new Uint8Array(64 * 1024), true), /retry failed/);
+-	assert.match(getCloseError()?.message || '', /retry failed/);
+-});
+-
+-test('XHTTP 上行取消会拒绝背压等待者', async () => {
+-	const gate = deferred();
+-	const { queue } = createUploadQueue({ write: () => gate.promise });
+-	for (let i = 0; i < 64; i++) queue.写入(new Uint8Array(1024));
+-	const waiting = queue.等待低水位();
+-	queue.清空();
+-	await assert.rejects(waiting, /queue closed/);
+-	gate.resolve();
+-});
+-
+-test('XHTTP 上行保留 16 MiB/4096 条硬上限', () => {
+-	const { queue } = createUploadQueue({ async write() { } });
+-	const chunk = new Uint8Array(4096);
+-	for (let i = 0; i < 4096; i++) assert.equal(queue.写入(chunk), true);
+-	assert.throws(() => queue.写入(chunk), /upload queue overflow/);
+-});

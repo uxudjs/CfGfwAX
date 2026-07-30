@@ -1,0 +1,1938 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-07-30T07:23:14.274Z",
+  "config": {
+    "profile": "uplink",
+    "warmup": 2,
+    "rounds": 7,
+    "totalBytesPerDirection": 16777216,
+    "chunkBytes": [
+      1024,
+      16384,
+      65536
+    ],
+    "cpuMeasurementObserver": "off",
+    "forcedGcBetweenRounds": false,
+    "cpuSampleTargetMs": 2000,
+    "cpuSampleWindowMs": [
+      1500,
+      3500
+    ],
+    "steadyStateWindow": 5,
+    "minSteadyStateRounds": 12,
+    "requiredSteadyStateWindows": 3,
+    "maxSteadyStateRounds": 24,
+    "steadyStateCvLimit": 0.1,
+    "steadyStateTrendLimit": 0.1,
+    "uplinkStrategy": "buffered-await",
+    "workerSource": "default",
+    "profileIsolation": "isolated-processes",
+    "maxIsolatedProfileAttempts": 2
+  },
+  "environmentFingerprint": {
+    "node": "v20.19.2",
+    "platform": "win32",
+    "arch": "x64",
+    "cpuModel": "Intel(R) Core(TM) Ultra 7 155H",
+    "logicalCores": 22,
+    "powerMode": "balanced:381b4222-f694-41f0-9685-ff5bb260df2e",
+    "benchmarkSha256": "472a4c100f4526c0fd0e8708044d1c607fa902fb9b6274eb18b4df1dd7f9b039",
+    "fixtureSha256": "d59fcee807ed4a3b1febe4dc393ca64f7d4e4faeedcb9e1a927dee8712fc20d5",
+    "workerSourceSha256": "4171cacd84a6d623704c38391951e9f41dbba1c0cc8810c66f582b881fd067a8"
+  },
+  "profileProcesses": [
+    {
+      "profile": "uplink-1kib",
+      "processId": 15796
+    },
+    {
+      "profile": "uplink-16kib",
+      "processId": 3040
+    },
+    {
+      "profile": "uplink-64kib",
+      "processId": 18712
+    }
+  ],
+  "profileAttempts": [
+    {
+      "profile": "uplink-1kib",
+      "attempts": 1
+    },
+    {
+      "profile": "uplink-16kib",
+      "attempts": 1
+    },
+    {
+      "profile": "uplink-64kib",
+      "attempts": 1
+    }
+  ],
+  "stability": {
+    "profile": "all-selected",
+    "cpuCv": 0.066242,
+    "limit": 0.1,
+    "passed": true,
+    "profiles": [
+      {
+        "profile": "uplink-1kib",
+        "cpuCv": 0.036317,
+        "passed": true
+      },
+      {
+        "profile": "uplink-16kib",
+        "cpuCv": 0.033102,
+        "passed": true
+      },
+      {
+        "profile": "uplink-64kib",
+        "cpuCv": 0.066242,
+        "passed": true
+      }
+    ],
+    "failedProfiles": []
+  },
+  "profiles": [
+    {
+      "profile": "uplink-1kib",
+      "chunkBytes": 1024,
+      "calibration": {
+        "status": "ready",
+        "reason": null,
+        "targetCpuMs": 2000,
+        "minCpuMs": 1500,
+        "maxCpuMs": 3500,
+        "selectedIterations": 263,
+        "sampleCpuMs": 1953,
+        "sampleWallMs": 2025.3969,
+        "iterations": 263,
+        "output": {
+          "totalBytes": 16777216,
+          "orderToken": 1210746301
+        },
+        "stages": [
+          {
+            "iterations": 1,
+            "sampleCpuMedianMs": 47,
+            "sampleWallMedianMs": 10.2437,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "continue",
+            "reason": null,
+            "nextIterations": 43,
+            "samples": [
+              {
+                "cpuMs": 78,
+                "wallMs": 21.1153,
+                "sampleCpuMs": 78,
+                "sampleWallMs": 21.1153,
+                "iterations": 1,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 47,
+                "wallMs": 10.2437,
+                "sampleCpuMs": 47,
+                "sampleWallMs": 10.2437,
+                "iterations": 1,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 0,
+                "wallMs": 7.2386,
+                "sampleCpuMs": 0,
+                "sampleWallMs": 7.2386,
+                "iterations": 1,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              }
+            ]
+          },
+          {
+            "iterations": 43,
+            "sampleCpuMedianMs": 328,
+            "sampleWallMedianMs": 323.7855,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "continue",
+            "reason": null,
+            "nextIterations": 263,
+            "samples": [
+              {
+                "cpuMs": 7.627907,
+                "wallMs": 7.679851,
+                "sampleCpuMs": 328,
+                "sampleWallMs": 330.2336,
+                "iterations": 43,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 7.651163,
+                "wallMs": 7.391905,
+                "sampleCpuMs": 329,
+                "sampleWallMs": 317.8519,
+                "iterations": 43,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 7.604651,
+                "wallMs": 7.529895,
+                "sampleCpuMs": 327,
+                "sampleWallMs": 323.7855,
+                "iterations": 43,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              }
+            ]
+          },
+          {
+            "iterations": 263,
+            "sampleCpuMedianMs": 1953,
+            "sampleWallMedianMs": 2025.3969,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "ready",
+            "reason": null,
+            "selectedIterations": 263,
+            "samples": [
+              {
+                "cpuMs": 7.543726,
+                "wallMs": 7.750137,
+                "sampleCpuMs": 1984,
+                "sampleWallMs": 2038.286,
+                "iterations": 263,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 7.250951,
+                "wallMs": 7.365658,
+                "sampleCpuMs": 1907,
+                "sampleWallMs": 1937.168,
+                "iterations": 263,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 7.425856,
+                "wallMs": 7.701129,
+                "sampleCpuMs": 1953,
+                "sampleWallMs": 2025.3969,
+                "iterations": 263,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "steadyState": {
+        "status": "ready",
+        "reason": null,
+        "stableWindows": 3,
+        "cpuCv": 0.023071,
+        "trendRatio": 0.054448,
+        "sampleCpuMedianMs": 1954,
+        "phases": [
+          {
+            "cpuCv": 0.023071,
+            "trendRatio": 0.054448,
+            "sampleCpuMedianMs": 1954,
+            "windowSize": 5,
+            "cvLimit": 0.1,
+            "trendLimit": 0.1,
+            "status": "ready",
+            "reason": null,
+            "stableWindows": 3,
+            "selectedIterations": 263,
+            "warmups": [
+              {
+                "cpuMs": 7.604563,
+                "wallMs": 7.54695,
+                "sampleCpuMs": 2000,
+                "sampleWallMs": 1984.8478,
+                "iterations": 263,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 7.368821,
+                "wallMs": 7.457992,
+                "sampleCpuMs": 1938,
+                "sampleWallMs": 1961.4518,
+                "iterations": 263,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 7.425856,
+                "wallMs": 7.451287,
+                "sampleCpuMs": 1953,
+                "sampleWallMs": 1959.6885,
+                "iterations": 263,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 7.068441,
+                "wallMs": 7.25916,
+                "sampleCpuMs": 1859,
+                "sampleWallMs": 1909.1592,
+                "iterations": 263,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 7.425856,
+                "wallMs": 7.435055,
+                "sampleCpuMs": 1953,
+                "sampleWallMs": 1955.4194,
+                "iterations": 263,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 7.429658,
+                "wallMs": 7.580258,
+                "sampleCpuMs": 1954,
+                "sampleWallMs": 1993.6079,
+                "iterations": 263,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 7.243346,
+                "wallMs": 7.375765,
+                "sampleCpuMs": 1905,
+                "sampleWallMs": 1939.8263,
+                "iterations": 263,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 7.368821,
+                "wallMs": 7.550137,
+                "sampleCpuMs": 1938,
+                "sampleWallMs": 1985.686,
+                "iterations": 263,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 7.547529,
+                "wallMs": 7.472872,
+                "sampleCpuMs": 1985,
+                "sampleWallMs": 1965.3653,
+                "iterations": 263,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 7.186312,
+                "wallMs": 7.57881,
+                "sampleCpuMs": 1890,
+                "sampleWallMs": 1993.2269,
+                "iterations": 263,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 7.429658,
+                "wallMs": 7.598749,
+                "sampleCpuMs": 1954,
+                "sampleWallMs": 1998.471,
+                "iterations": 263,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 7.247148,
+                "wallMs": 7.49336,
+                "sampleCpuMs": 1906,
+                "sampleWallMs": 1970.7537,
+                "iterations": 263,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 7.486692,
+                "wallMs": 7.722723,
+                "sampleCpuMs": 1969,
+                "sampleWallMs": 2031.0761,
+                "iterations": 263,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 7.661597,
+                "wallMs": 7.64026,
+                "sampleCpuMs": 2015,
+                "sampleWallMs": 2009.3885,
+                "iterations": 263,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              }
+            ],
+            "iterations": 263
+          }
+        ]
+      },
+      "measurementIterations": 263,
+      "warmups": [
+        {
+          "cpuMs": 7.604563,
+          "wallMs": 7.54695,
+          "sampleCpuMs": 2000,
+          "sampleWallMs": 1984.8478,
+          "iterations": 263,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 7.368821,
+          "wallMs": 7.457992,
+          "sampleCpuMs": 1938,
+          "sampleWallMs": 1961.4518,
+          "iterations": 263,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 7.425856,
+          "wallMs": 7.451287,
+          "sampleCpuMs": 1953,
+          "sampleWallMs": 1959.6885,
+          "iterations": 263,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 7.068441,
+          "wallMs": 7.25916,
+          "sampleCpuMs": 1859,
+          "sampleWallMs": 1909.1592,
+          "iterations": 263,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 7.425856,
+          "wallMs": 7.435055,
+          "sampleCpuMs": 1953,
+          "sampleWallMs": 1955.4194,
+          "iterations": 263,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 7.429658,
+          "wallMs": 7.580258,
+          "sampleCpuMs": 1954,
+          "sampleWallMs": 1993.6079,
+          "iterations": 263,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 7.243346,
+          "wallMs": 7.375765,
+          "sampleCpuMs": 1905,
+          "sampleWallMs": 1939.8263,
+          "iterations": 263,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 7.368821,
+          "wallMs": 7.550137,
+          "sampleCpuMs": 1938,
+          "sampleWallMs": 1985.686,
+          "iterations": 263,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 7.547529,
+          "wallMs": 7.472872,
+          "sampleCpuMs": 1985,
+          "sampleWallMs": 1965.3653,
+          "iterations": 263,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 7.186312,
+          "wallMs": 7.57881,
+          "sampleCpuMs": 1890,
+          "sampleWallMs": 1993.2269,
+          "iterations": 263,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 7.429658,
+          "wallMs": 7.598749,
+          "sampleCpuMs": 1954,
+          "sampleWallMs": 1998.471,
+          "iterations": 263,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 7.247148,
+          "wallMs": 7.49336,
+          "sampleCpuMs": 1906,
+          "sampleWallMs": 1970.7537,
+          "iterations": 263,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 7.486692,
+          "wallMs": 7.722723,
+          "sampleCpuMs": 1969,
+          "sampleWallMs": 2031.0761,
+          "iterations": 263,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 7.661597,
+          "wallMs": 7.64026,
+          "sampleCpuMs": 2015,
+          "sampleWallMs": 2009.3885,
+          "iterations": 263,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        }
+      ],
+      "rounds": [
+        {
+          "cpuMs": 7.365019,
+          "wallMs": 7.58687,
+          "sampleCpuMs": 1937,
+          "sampleWallMs": 1995.3469,
+          "iterations": 263,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 7.486692,
+          "wallMs": 7.378552,
+          "sampleCpuMs": 1969,
+          "sampleWallMs": 1940.5591,
+          "iterations": 263,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 6.893536,
+          "wallMs": 7.32124,
+          "sampleCpuMs": 1813,
+          "sampleWallMs": 1925.4861,
+          "iterations": 263,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 7.78327,
+          "wallMs": 7.839772,
+          "sampleCpuMs": 2047,
+          "sampleWallMs": 2061.8601,
+          "iterations": 263,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 7.365019,
+          "wallMs": 7.615503,
+          "sampleCpuMs": 1937,
+          "sampleWallMs": 2002.8774,
+          "iterations": 263,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 7.425856,
+          "wallMs": 7.561518,
+          "sampleCpuMs": 1953,
+          "sampleWallMs": 1988.6793,
+          "iterations": 263,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 7.072243,
+          "wallMs": 7.350096,
+          "sampleCpuMs": 1860,
+          "sampleWallMs": 1933.0752,
+          "iterations": 263,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        }
+      ],
+      "summary": {
+        "cpuMedianMs": 7.365019,
+        "cpuMeanMs": 7.341662,
+        "cpuCv": 0.036317,
+        "wallMedianMs": 7.561518
+      },
+      "output": {
+        "totalBytes": 16777216,
+        "sha256": "d59fcee807ed4a3b1febe4dc393ca64f7d4e4faeedcb9e1a927dee8712fc20d5"
+      },
+      "proxy": {
+        "sends": 16384,
+        "allocatedBuffersProxy": 0,
+        "copiedBytesProxy": 0,
+        "arrayBuffersPeakBytes": 0,
+        "handlerPath": "worker-xhttp-stream-one",
+        "inputViews": 16384,
+        "readerReadsProxy": 16385,
+        "pumpWriteAwaitsProxy": 16384,
+        "syncEnqueuesProxy": 16384,
+        "completionPromisesProxy": 0,
+        "backpressureWaitsProxy": 0,
+        "flushAwaitsProxy": 1
+      },
+      "processId": 15796
+    },
+    {
+      "profile": "uplink-16kib",
+      "chunkBytes": 16384,
+      "calibration": {
+        "status": "ready",
+        "reason": null,
+        "targetCpuMs": 2000,
+        "minCpuMs": 1500,
+        "maxCpuMs": 3500,
+        "selectedIterations": 3559,
+        "sampleCpuMs": 1750,
+        "sampleWallMs": 1739.828,
+        "iterations": 3559,
+        "output": {
+          "totalBytes": 16777216,
+          "orderToken": 1298907385
+        },
+        "stages": [
+          {
+            "iterations": 1,
+            "sampleCpuMedianMs": 0,
+            "sampleWallMedianMs": 3.271,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "continue",
+            "reason": null,
+            "nextIterations": 612,
+            "samples": [
+              {
+                "cpuMs": 0,
+                "wallMs": 2.0004,
+                "sampleCpuMs": 0,
+                "sampleWallMs": 2.0004,
+                "iterations": 1,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0,
+                "wallMs": 3.271,
+                "sampleCpuMs": 0,
+                "sampleWallMs": 3.271,
+                "iterations": 1,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 31,
+                "wallMs": 8.0418,
+                "sampleCpuMs": 31,
+                "sampleWallMs": 8.0418,
+                "iterations": 1,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              }
+            ]
+          },
+          {
+            "iterations": 612,
+            "sampleCpuMedianMs": 344,
+            "sampleWallMedianMs": 313.3631,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "continue",
+            "reason": null,
+            "nextIterations": 3559,
+            "samples": [
+              {
+                "cpuMs": 0.588235,
+                "wallMs": 0.515877,
+                "sampleCpuMs": 360,
+                "sampleWallMs": 315.7168,
+                "iterations": 612,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0.509804,
+                "wallMs": 0.512031,
+                "sampleCpuMs": 312,
+                "sampleWallMs": 313.3631,
+                "iterations": 612,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0.562092,
+                "wallMs": 0.502596,
+                "sampleCpuMs": 344,
+                "sampleWallMs": 307.5886,
+                "iterations": 612,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              }
+            ]
+          },
+          {
+            "iterations": 3559,
+            "sampleCpuMedianMs": 1750,
+            "sampleWallMedianMs": 1739.828,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "ready",
+            "reason": null,
+            "selectedIterations": 3559,
+            "samples": [
+              {
+                "cpuMs": 0.478505,
+                "wallMs": 0.486642,
+                "sampleCpuMs": 1703,
+                "sampleWallMs": 1731.9604,
+                "iterations": 3559,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0.504917,
+                "wallMs": 0.488853,
+                "sampleCpuMs": 1797,
+                "sampleWallMs": 1739.828,
+                "iterations": 3559,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0.491711,
+                "wallMs": 0.498213,
+                "sampleCpuMs": 1750,
+                "sampleWallMs": 1773.1409,
+                "iterations": 3559,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "steadyState": {
+        "status": "ready",
+        "reason": null,
+        "stableWindows": 3,
+        "cpuCv": 0.036885,
+        "trendRatio": 0.090603,
+        "sampleCpuMedianMs": 1734,
+        "phases": [
+          {
+            "cpuCv": 0.036885,
+            "trendRatio": 0.090603,
+            "sampleCpuMedianMs": 1734,
+            "windowSize": 5,
+            "cvLimit": 0.1,
+            "trendLimit": 0.1,
+            "status": "ready",
+            "reason": null,
+            "stableWindows": 3,
+            "selectedIterations": 3559,
+            "warmups": [
+              {
+                "cpuMs": 0.495926,
+                "wallMs": 0.511398,
+                "sampleCpuMs": 1765,
+                "sampleWallMs": 1820.0656,
+                "iterations": 3559,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0.491992,
+                "wallMs": 0.503212,
+                "sampleCpuMs": 1751,
+                "sampleWallMs": 1790.9308,
+                "iterations": 3559,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0.469514,
+                "wallMs": 0.489208,
+                "sampleCpuMs": 1671,
+                "sampleWallMs": 1741.0912,
+                "iterations": 3559,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0.474291,
+                "wallMs": 0.476301,
+                "sampleCpuMs": 1688,
+                "sampleWallMs": 1695.1557,
+                "iterations": 3559,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0.47401,
+                "wallMs": 0.489158,
+                "sampleCpuMs": 1687,
+                "sampleWallMs": 1740.9145,
+                "iterations": 3559,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0.46558,
+                "wallMs": 0.481558,
+                "sampleCpuMs": 1657,
+                "sampleWallMs": 1713.8633,
+                "iterations": 3559,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0.48272,
+                "wallMs": 0.485382,
+                "sampleCpuMs": 1718,
+                "sampleWallMs": 1727.4753,
+                "iterations": 3559,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0.535544,
+                "wallMs": 0.540587,
+                "sampleCpuMs": 1906,
+                "sampleWallMs": 1923.9496,
+                "iterations": 3559,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0.522619,
+                "wallMs": 0.530208,
+                "sampleCpuMs": 1860,
+                "sampleWallMs": 1887.0104,
+                "iterations": 3559,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0.487496,
+                "wallMs": 0.498438,
+                "sampleCpuMs": 1735,
+                "sampleWallMs": 1773.9406,
+                "iterations": 3559,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0.460804,
+                "wallMs": 0.47023,
+                "sampleCpuMs": 1640,
+                "sampleWallMs": 1673.5496,
+                "iterations": 3559,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0.461085,
+                "wallMs": 0.469172,
+                "sampleCpuMs": 1641,
+                "sampleWallMs": 1669.7824,
+                "iterations": 3559,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0.465299,
+                "wallMs": 0.479664,
+                "sampleCpuMs": 1656,
+                "sampleWallMs": 1707.1234,
+                "iterations": 3559,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0.500421,
+                "wallMs": 0.501252,
+                "sampleCpuMs": 1781,
+                "sampleWallMs": 1783.9564,
+                "iterations": 3559,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0.487216,
+                "wallMs": 0.502001,
+                "sampleCpuMs": 1734,
+                "sampleWallMs": 1786.6201,
+                "iterations": 3559,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0.504917,
+                "wallMs": 0.508284,
+                "sampleCpuMs": 1797,
+                "sampleWallMs": 1808.9839,
+                "iterations": 3559,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              }
+            ],
+            "iterations": 3559
+          }
+        ]
+      },
+      "measurementIterations": 3559,
+      "warmups": [
+        {
+          "cpuMs": 0.495926,
+          "wallMs": 0.511398,
+          "sampleCpuMs": 1765,
+          "sampleWallMs": 1820.0656,
+          "iterations": 3559,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.491992,
+          "wallMs": 0.503212,
+          "sampleCpuMs": 1751,
+          "sampleWallMs": 1790.9308,
+          "iterations": 3559,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.469514,
+          "wallMs": 0.489208,
+          "sampleCpuMs": 1671,
+          "sampleWallMs": 1741.0912,
+          "iterations": 3559,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.474291,
+          "wallMs": 0.476301,
+          "sampleCpuMs": 1688,
+          "sampleWallMs": 1695.1557,
+          "iterations": 3559,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.47401,
+          "wallMs": 0.489158,
+          "sampleCpuMs": 1687,
+          "sampleWallMs": 1740.9145,
+          "iterations": 3559,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.46558,
+          "wallMs": 0.481558,
+          "sampleCpuMs": 1657,
+          "sampleWallMs": 1713.8633,
+          "iterations": 3559,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.48272,
+          "wallMs": 0.485382,
+          "sampleCpuMs": 1718,
+          "sampleWallMs": 1727.4753,
+          "iterations": 3559,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.535544,
+          "wallMs": 0.540587,
+          "sampleCpuMs": 1906,
+          "sampleWallMs": 1923.9496,
+          "iterations": 3559,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.522619,
+          "wallMs": 0.530208,
+          "sampleCpuMs": 1860,
+          "sampleWallMs": 1887.0104,
+          "iterations": 3559,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.487496,
+          "wallMs": 0.498438,
+          "sampleCpuMs": 1735,
+          "sampleWallMs": 1773.9406,
+          "iterations": 3559,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.460804,
+          "wallMs": 0.47023,
+          "sampleCpuMs": 1640,
+          "sampleWallMs": 1673.5496,
+          "iterations": 3559,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.461085,
+          "wallMs": 0.469172,
+          "sampleCpuMs": 1641,
+          "sampleWallMs": 1669.7824,
+          "iterations": 3559,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.465299,
+          "wallMs": 0.479664,
+          "sampleCpuMs": 1656,
+          "sampleWallMs": 1707.1234,
+          "iterations": 3559,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.500421,
+          "wallMs": 0.501252,
+          "sampleCpuMs": 1781,
+          "sampleWallMs": 1783.9564,
+          "iterations": 3559,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.487216,
+          "wallMs": 0.502001,
+          "sampleCpuMs": 1734,
+          "sampleWallMs": 1786.6201,
+          "iterations": 3559,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.504917,
+          "wallMs": 0.508284,
+          "sampleCpuMs": 1797,
+          "sampleWallMs": 1808.9839,
+          "iterations": 3559,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        }
+      ],
+      "rounds": [
+        {
+          "cpuMs": 0.474291,
+          "wallMs": 0.480994,
+          "sampleCpuMs": 1688,
+          "sampleWallMs": 1711.8587,
+          "iterations": 3559,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.500421,
+          "wallMs": 0.513822,
+          "sampleCpuMs": 1781,
+          "sampleWallMs": 1828.6942,
+          "iterations": 3559,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.474291,
+          "wallMs": 0.491718,
+          "sampleCpuMs": 1688,
+          "sampleWallMs": 1750.0261,
+          "iterations": 3559,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.478505,
+          "wallMs": 0.489717,
+          "sampleCpuMs": 1703,
+          "sampleWallMs": 1742.9036,
+          "iterations": 3559,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.513627,
+          "wallMs": 0.521703,
+          "sampleCpuMs": 1828,
+          "sampleWallMs": 1856.7427,
+          "iterations": 3559,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.513627,
+          "wallMs": 0.522878,
+          "sampleCpuMs": 1828,
+          "sampleWallMs": 1860.9235,
+          "iterations": 3559,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.500421,
+          "wallMs": 0.504735,
+          "sampleCpuMs": 1781,
+          "sampleWallMs": 1796.3527,
+          "iterations": 3559,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        }
+      ],
+      "summary": {
+        "cpuMedianMs": 0.500421,
+        "cpuMeanMs": 0.493598,
+        "cpuCv": 0.033102,
+        "wallMedianMs": 0.504735
+      },
+      "output": {
+        "totalBytes": 16777216,
+        "sha256": "d59fcee807ed4a3b1febe4dc393ca64f7d4e4faeedcb9e1a927dee8712fc20d5"
+      },
+      "proxy": {
+        "sends": 1024,
+        "allocatedBuffersProxy": 0,
+        "copiedBytesProxy": 0,
+        "arrayBuffersPeakBytes": 0,
+        "handlerPath": "worker-xhttp-stream-one",
+        "inputViews": 1024,
+        "readerReadsProxy": 1025,
+        "pumpWriteAwaitsProxy": 1024,
+        "syncEnqueuesProxy": 1024,
+        "completionPromisesProxy": 0,
+        "backpressureWaitsProxy": 0,
+        "flushAwaitsProxy": 1
+      },
+      "processId": 3040
+    },
+    {
+      "profile": "uplink-64kib",
+      "chunkBytes": 65536,
+      "calibration": {
+        "status": "ready",
+        "reason": null,
+        "targetCpuMs": 2000,
+        "minCpuMs": 1500,
+        "maxCpuMs": 3500,
+        "selectedIterations": 15090,
+        "sampleCpuMs": 1828,
+        "sampleWallMs": 1880.0158,
+        "iterations": 15090,
+        "output": {
+          "totalBytes": 16777216,
+          "orderToken": 2350810522
+        },
+        "stages": [
+          {
+            "iterations": 1,
+            "sampleCpuMedianMs": 0,
+            "sampleWallMedianMs": 0.3261,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "continue",
+            "reason": null,
+            "nextIterations": 6134,
+            "samples": [
+              {
+                "cpuMs": 0,
+                "wallMs": 0.3261,
+                "sampleCpuMs": 0,
+                "sampleWallMs": 0.3261,
+                "iterations": 1,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0,
+                "wallMs": 0.3234,
+                "sampleCpuMs": 0,
+                "sampleWallMs": 0.3234,
+                "iterations": 1,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0,
+                "wallMs": 0.8518,
+                "sampleCpuMs": 0,
+                "sampleWallMs": 0.8518,
+                "iterations": 1,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              }
+            ]
+          },
+          {
+            "iterations": 6134,
+            "sampleCpuMedianMs": 813,
+            "sampleWallMedianMs": 746.6571,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "continue",
+            "reason": null,
+            "nextIterations": 15090,
+            "samples": [
+              {
+                "cpuMs": 0.134985,
+                "wallMs": 0.121724,
+                "sampleCpuMs": 828,
+                "sampleWallMs": 746.6571,
+                "iterations": 6134,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0.119661,
+                "wallMs": 0.119719,
+                "sampleCpuMs": 734,
+                "sampleWallMs": 734.3568,
+                "iterations": 6134,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0.13254,
+                "wallMs": 0.135179,
+                "sampleCpuMs": 813,
+                "sampleWallMs": 829.1874,
+                "iterations": 6134,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              }
+            ]
+          },
+          {
+            "iterations": 15090,
+            "sampleCpuMedianMs": 1828,
+            "sampleWallMedianMs": 1880.0158,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "ready",
+            "reason": null,
+            "selectedIterations": 15090,
+            "samples": [
+              {
+                "cpuMs": 0.12114,
+                "wallMs": 0.125956,
+                "sampleCpuMs": 1828,
+                "sampleWallMs": 1900.6725,
+                "iterations": 15090,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0.12114,
+                "wallMs": 0.124587,
+                "sampleCpuMs": 1828,
+                "sampleWallMs": 1880.0158,
+                "iterations": 15090,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0.120146,
+                "wallMs": 0.121398,
+                "sampleCpuMs": 1813,
+                "sampleWallMs": 1831.8927,
+                "iterations": 15090,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "steadyState": {
+        "status": "ready",
+        "reason": null,
+        "stableWindows": 3,
+        "cpuCv": 0.025041,
+        "trendRatio": 0.045258,
+        "sampleCpuMedianMs": 1781,
+        "phases": [
+          {
+            "cpuCv": 0.025041,
+            "trendRatio": 0.045258,
+            "sampleCpuMedianMs": 1781,
+            "windowSize": 5,
+            "cvLimit": 0.1,
+            "trendLimit": 0.1,
+            "status": "ready",
+            "reason": null,
+            "stableWindows": 3,
+            "selectedIterations": 15090,
+            "warmups": [
+              {
+                "cpuMs": 0.116965,
+                "wallMs": 0.121608,
+                "sampleCpuMs": 1765,
+                "sampleWallMs": 1835.0626,
+                "iterations": 15090,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0.1222,
+                "wallMs": 0.118189,
+                "sampleCpuMs": 1844,
+                "sampleWallMs": 1783.4655,
+                "iterations": 15090,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0.123194,
+                "wallMs": 0.126679,
+                "sampleCpuMs": 1859,
+                "sampleWallMs": 1911.5917,
+                "iterations": 15090,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0.121206,
+                "wallMs": 0.123574,
+                "sampleCpuMs": 1829,
+                "sampleWallMs": 1864.7261,
+                "iterations": 15090,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0.127369,
+                "wallMs": 0.126323,
+                "sampleCpuMs": 1922,
+                "sampleWallMs": 1906.2129,
+                "iterations": 15090,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0.121074,
+                "wallMs": 0.125008,
+                "sampleCpuMs": 1827,
+                "sampleWallMs": 1886.3748,
+                "iterations": 15090,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0.113917,
+                "wallMs": 0.116825,
+                "sampleCpuMs": 1719,
+                "sampleWallMs": 1762.8946,
+                "iterations": 15090,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0.12114,
+                "wallMs": 0.117992,
+                "sampleCpuMs": 1828,
+                "sampleWallMs": 1780.5051,
+                "iterations": 15090,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0.117031,
+                "wallMs": 0.119707,
+                "sampleCpuMs": 1766,
+                "sampleWallMs": 1806.3777,
+                "iterations": 15090,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0.125315,
+                "wallMs": 0.129072,
+                "sampleCpuMs": 1891,
+                "sampleWallMs": 1947.69,
+                "iterations": 15090,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0.116965,
+                "wallMs": 0.122111,
+                "sampleCpuMs": 1765,
+                "sampleWallMs": 1842.6547,
+                "iterations": 15090,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0.119085,
+                "wallMs": 0.118103,
+                "sampleCpuMs": 1797,
+                "sampleWallMs": 1782.1785,
+                "iterations": 15090,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0.118025,
+                "wallMs": 0.118202,
+                "sampleCpuMs": 1781,
+                "sampleWallMs": 1783.6623,
+                "iterations": 15090,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0.118025,
+                "wallMs": 0.115744,
+                "sampleCpuMs": 1781,
+                "sampleWallMs": 1746.5758,
+                "iterations": 15090,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              }
+            ],
+            "iterations": 15090
+          }
+        ]
+      },
+      "measurementIterations": 15090,
+      "warmups": [
+        {
+          "cpuMs": 0.116965,
+          "wallMs": 0.121608,
+          "sampleCpuMs": 1765,
+          "sampleWallMs": 1835.0626,
+          "iterations": 15090,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.1222,
+          "wallMs": 0.118189,
+          "sampleCpuMs": 1844,
+          "sampleWallMs": 1783.4655,
+          "iterations": 15090,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.123194,
+          "wallMs": 0.126679,
+          "sampleCpuMs": 1859,
+          "sampleWallMs": 1911.5917,
+          "iterations": 15090,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.121206,
+          "wallMs": 0.123574,
+          "sampleCpuMs": 1829,
+          "sampleWallMs": 1864.7261,
+          "iterations": 15090,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.127369,
+          "wallMs": 0.126323,
+          "sampleCpuMs": 1922,
+          "sampleWallMs": 1906.2129,
+          "iterations": 15090,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.121074,
+          "wallMs": 0.125008,
+          "sampleCpuMs": 1827,
+          "sampleWallMs": 1886.3748,
+          "iterations": 15090,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.113917,
+          "wallMs": 0.116825,
+          "sampleCpuMs": 1719,
+          "sampleWallMs": 1762.8946,
+          "iterations": 15090,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.12114,
+          "wallMs": 0.117992,
+          "sampleCpuMs": 1828,
+          "sampleWallMs": 1780.5051,
+          "iterations": 15090,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.117031,
+          "wallMs": 0.119707,
+          "sampleCpuMs": 1766,
+          "sampleWallMs": 1806.3777,
+          "iterations": 15090,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.125315,
+          "wallMs": 0.129072,
+          "sampleCpuMs": 1891,
+          "sampleWallMs": 1947.69,
+          "iterations": 15090,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.116965,
+          "wallMs": 0.122111,
+          "sampleCpuMs": 1765,
+          "sampleWallMs": 1842.6547,
+          "iterations": 15090,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.119085,
+          "wallMs": 0.118103,
+          "sampleCpuMs": 1797,
+          "sampleWallMs": 1782.1785,
+          "iterations": 15090,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.118025,
+          "wallMs": 0.118202,
+          "sampleCpuMs": 1781,
+          "sampleWallMs": 1783.6623,
+          "iterations": 15090,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.118025,
+          "wallMs": 0.115744,
+          "sampleCpuMs": 1781,
+          "sampleWallMs": 1746.5758,
+          "iterations": 15090,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        }
+      ],
+      "rounds": [
+        {
+          "cpuMs": 0.110802,
+          "wallMs": 0.115387,
+          "sampleCpuMs": 1672,
+          "sampleWallMs": 1741.1921,
+          "iterations": 15090,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.122266,
+          "wallMs": 0.122304,
+          "sampleCpuMs": 1845,
+          "sampleWallMs": 1845.5711,
+          "iterations": 15090,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.117959,
+          "wallMs": 0.117244,
+          "sampleCpuMs": 1780,
+          "sampleWallMs": 1769.2136,
+          "iterations": 15090,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.121206,
+          "wallMs": 0.12698,
+          "sampleCpuMs": 1829,
+          "sampleWallMs": 1916.1289,
+          "iterations": 15090,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.129423,
+          "wallMs": 0.133022,
+          "sampleCpuMs": 1953,
+          "sampleWallMs": 2007.306,
+          "iterations": 15090,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.138767,
+          "wallMs": 0.137687,
+          "sampleCpuMs": 2094,
+          "sampleWallMs": 2077.6953,
+          "iterations": 15090,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.125249,
+          "wallMs": 0.125896,
+          "sampleCpuMs": 1890,
+          "sampleWallMs": 1899.7701,
+          "iterations": 15090,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        }
+      ],
+      "summary": {
+        "cpuMedianMs": 0.122266,
+        "cpuMeanMs": 0.123667,
+        "cpuCv": 0.066242,
+        "wallMedianMs": 0.125896
+      },
+      "output": {
+        "totalBytes": 16777216,
+        "sha256": "d59fcee807ed4a3b1febe4dc393ca64f7d4e4faeedcb9e1a927dee8712fc20d5"
+      },
+      "proxy": {
+        "sends": 256,
+        "allocatedBuffersProxy": 0,
+        "copiedBytesProxy": 0,
+        "arrayBuffersPeakBytes": 0,
+        "handlerPath": "worker-xhttp-stream-one",
+        "inputViews": 256,
+        "readerReadsProxy": 257,
+        "pumpWriteAwaitsProxy": 256,
+        "syncEnqueuesProxy": 0,
+        "completionPromisesProxy": 256,
+        "backpressureWaitsProxy": 0,
+        "flushAwaitsProxy": 1
+      },
+      "processId": 18712
+    }
+  ]
+}

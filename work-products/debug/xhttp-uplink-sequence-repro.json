@@ -1,0 +1,921 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-07-30T04:55:37.695Z",
+  "config": {
+    "profile": "uplink",
+    "warmup": 2,
+    "rounds": 7,
+    "totalBytesPerDirection": 16777216,
+    "chunkBytes": [
+      1024,
+      16384,
+      65536
+    ],
+    "cpuMeasurementObserver": "off",
+    "cpuSampleTargetMs": 2000,
+    "cpuSampleWindowMs": [
+      1500,
+      3500
+    ],
+    "uplinkStrategy": "auto",
+    "workerSource": "default"
+  },
+  "environmentFingerprint": {
+    "node": "v20.19.2",
+    "platform": "win32",
+    "arch": "x64",
+    "cpuModel": "Intel(R) Core(TM) Ultra 7 155H",
+    "logicalCores": 22,
+    "powerMode": "balanced:381b4222-f694-41f0-9685-ff5bb260df2e",
+    "benchmarkSha256": "d1bf49b16eed59c904513b5f541a5bb25377bca7c3ca402efe16f05ab8289a64",
+    "fixtureSha256": "d59fcee807ed4a3b1febe4dc393ca64f7d4e4faeedcb9e1a927dee8712fc20d5",
+    "workerSourceSha256": "9fee3263733fc5412ccad63a1e85c68cae391c7410edec0987535bcdd42c6a76"
+  },
+  "stability": {
+    "profile": "all-selected",
+    "cpuCv": 0.099063,
+    "limit": 0.1,
+    "passed": true,
+    "profiles": [
+      {
+        "profile": "uplink-1kib",
+        "cpuCv": 0.099063,
+        "passed": true
+      },
+      {
+        "profile": "uplink-16kib",
+        "cpuCv": 0.035562,
+        "passed": true
+      },
+      {
+        "profile": "uplink-64kib",
+        "cpuCv": 0.041171,
+        "passed": true
+      }
+    ],
+    "failedProfiles": []
+  },
+  "profiles": [
+    {
+      "profile": "uplink-1kib",
+      "chunkBytes": 1024,
+      "calibration": {
+        "status": "ready",
+        "reason": null,
+        "targetCpuMs": 2000,
+        "minCpuMs": 1500,
+        "maxCpuMs": 3500,
+        "selectedIterations": 238,
+        "sampleCpuMs": 2001,
+        "sampleWallMs": 1970.9946,
+        "iterations": 238,
+        "output": {
+          "totalBytes": 16777216,
+          "orderToken": 1210746301
+        },
+        "stages": [
+          {
+            "iterations": 1,
+            "sampleCpuMedianMs": 78,
+            "sampleWallMedianMs": 17.0084,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "continue",
+            "reason": null,
+            "nextIterations": 26,
+            "samples": [
+              {
+                "cpuMs": 78,
+                "wallMs": 17.8078,
+                "sampleCpuMs": 78,
+                "sampleWallMs": 17.8078,
+                "iterations": 1,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 47,
+                "wallMs": 14.5556,
+                "sampleCpuMs": 47,
+                "sampleWallMs": 14.5556,
+                "iterations": 1,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 78,
+                "wallMs": 17.0084,
+                "sampleCpuMs": 78,
+                "sampleWallMs": 17.0084,
+                "iterations": 1,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              }
+            ]
+          },
+          {
+            "iterations": 26,
+            "sampleCpuMedianMs": 219,
+            "sampleWallMedianMs": 206.4873,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "continue",
+            "reason": null,
+            "nextIterations": 238,
+            "samples": [
+              {
+                "cpuMs": 8.423077,
+                "wallMs": 7.995304,
+                "sampleCpuMs": 219,
+                "sampleWallMs": 207.8779,
+                "iterations": 26,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 7.153846,
+                "wallMs": 7.941819,
+                "sampleCpuMs": 186,
+                "sampleWallMs": 206.4873,
+                "iterations": 26,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 9.615385,
+                "wallMs": 7.938712,
+                "sampleCpuMs": 250,
+                "sampleWallMs": 206.4065,
+                "iterations": 26,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              }
+            ]
+          },
+          {
+            "iterations": 238,
+            "sampleCpuMedianMs": 2001,
+            "sampleWallMedianMs": 1970.9946,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "ready",
+            "reason": null,
+            "selectedIterations": 238,
+            "samples": [
+              {
+                "cpuMs": 8.407563,
+                "wallMs": 8.28149,
+                "sampleCpuMs": 2001,
+                "sampleWallMs": 1970.9946,
+                "iterations": 238,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 9.260504,
+                "wallMs": 9.630675,
+                "sampleCpuMs": 2204,
+                "sampleWallMs": 2292.1006,
+                "iterations": 238,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              },
+              {
+                "cpuMs": 8.008403,
+                "wallMs": 7.779714,
+                "sampleCpuMs": 1906,
+                "sampleWallMs": 1851.5719,
+                "iterations": 238,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1210746301
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "measurementIterations": 238,
+      "warmups": [
+        {
+          "cpuMs": 9.12605,
+          "wallMs": 9.058285,
+          "sampleCpuMs": 2172,
+          "sampleWallMs": 2155.8718,
+          "iterations": 238,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 9.781513,
+          "wallMs": 9.591146,
+          "sampleCpuMs": 2328,
+          "sampleWallMs": 2282.6927,
+          "iterations": 238,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        }
+      ],
+      "rounds": [
+        {
+          "cpuMs": 7.483193,
+          "wallMs": 7.659367,
+          "sampleCpuMs": 1781,
+          "sampleWallMs": 1822.9294,
+          "iterations": 238,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 8.336134,
+          "wallMs": 7.853293,
+          "sampleCpuMs": 1984,
+          "sampleWallMs": 1869.0837,
+          "iterations": 238,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 7.55042,
+          "wallMs": 7.757892,
+          "sampleCpuMs": 1797,
+          "sampleWallMs": 1846.3782,
+          "iterations": 238,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 9.453782,
+          "wallMs": 9.334035,
+          "sampleCpuMs": 2250,
+          "sampleWallMs": 2221.5004,
+          "iterations": 238,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 7.680672,
+          "wallMs": 7.856702,
+          "sampleCpuMs": 1828,
+          "sampleWallMs": 1869.895,
+          "iterations": 238,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 9.386555,
+          "wallMs": 9.618266,
+          "sampleCpuMs": 2234,
+          "sampleWallMs": 2289.1472,
+          "iterations": 238,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        },
+        {
+          "cpuMs": 7.55042,
+          "wallMs": 7.732938,
+          "sampleCpuMs": 1797,
+          "sampleWallMs": 1840.4392,
+          "iterations": 238,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1210746301
+          }
+        }
+      ],
+      "summary": {
+        "cpuMedianMs": 7.680672,
+        "cpuMeanMs": 8.205882,
+        "cpuCv": 0.099063,
+        "wallMedianMs": 7.853293
+      },
+      "output": {
+        "totalBytes": 16777216,
+        "sha256": "d59fcee807ed4a3b1febe4dc393ca64f7d4e4faeedcb9e1a927dee8712fc20d5"
+      },
+      "proxy": {
+        "sends": 16384,
+        "allocatedBuffersProxy": 0,
+        "copiedBytesProxy": 0,
+        "arrayBuffersPeakBytes": 0,
+        "handlerPath": "worker-xhttp-stream-one",
+        "inputViews": 16384,
+        "readerReadsProxy": 16385,
+        "pumpWriteAwaitsProxy": 16384,
+        "syncEnqueuesProxy": 16384,
+        "completionPromisesProxy": 0,
+        "backpressureWaitsProxy": 0,
+        "flushAwaitsProxy": 1
+      }
+    },
+    {
+      "profile": "uplink-16kib",
+      "chunkBytes": 16384,
+      "calibration": {
+        "status": "ready",
+        "reason": null,
+        "targetCpuMs": 2000,
+        "minCpuMs": 1500,
+        "maxCpuMs": 3500,
+        "selectedIterations": 3630,
+        "sampleCpuMs": 1891,
+        "sampleWallMs": 1921.0237,
+        "iterations": 3630,
+        "output": {
+          "totalBytes": 16777216,
+          "orderToken": 1298907385
+        },
+        "stages": [
+          {
+            "iterations": 1,
+            "sampleCpuMedianMs": 0,
+            "sampleWallMedianMs": 1.0529,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "continue",
+            "reason": null,
+            "nextIterations": 1900,
+            "samples": [
+              {
+                "cpuMs": 0,
+                "wallMs": 1.1965,
+                "sampleCpuMs": 0,
+                "sampleWallMs": 1.1965,
+                "iterations": 1,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0,
+                "wallMs": 1.0529,
+                "sampleCpuMs": 0,
+                "sampleWallMs": 1.0529,
+                "iterations": 1,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0,
+                "wallMs": 0.9489,
+                "sampleCpuMs": 0,
+                "sampleWallMs": 0.9489,
+                "iterations": 1,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              }
+            ]
+          },
+          {
+            "iterations": 1900,
+            "sampleCpuMedianMs": 1047,
+            "sampleWallMedianMs": 967.0785,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "continue",
+            "reason": null,
+            "nextIterations": 3630,
+            "samples": [
+              {
+                "cpuMs": 0.551053,
+                "wallMs": 0.508989,
+                "sampleCpuMs": 1047,
+                "sampleWallMs": 967.0785,
+                "iterations": 1900,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0.534737,
+                "wallMs": 0.508014,
+                "sampleCpuMs": 1016,
+                "sampleWallMs": 965.2261,
+                "iterations": 1900,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0.575263,
+                "wallMs": 0.529121,
+                "sampleCpuMs": 1093,
+                "sampleWallMs": 1005.3306,
+                "iterations": 1900,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              }
+            ]
+          },
+          {
+            "iterations": 3630,
+            "sampleCpuMedianMs": 1891,
+            "sampleWallMedianMs": 1921.0237,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "ready",
+            "reason": null,
+            "selectedIterations": 3630,
+            "samples": [
+              {
+                "cpuMs": 0.508264,
+                "wallMs": 0.501112,
+                "sampleCpuMs": 1845,
+                "sampleWallMs": 1819.0361,
+                "iterations": 3630,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0.533333,
+                "wallMs": 0.529208,
+                "sampleCpuMs": 1936,
+                "sampleWallMs": 1921.0237,
+                "iterations": 3630,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              },
+              {
+                "cpuMs": 0.520937,
+                "wallMs": 0.53766,
+                "sampleCpuMs": 1891,
+                "sampleWallMs": 1951.7068,
+                "iterations": 3630,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 1298907385
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "measurementIterations": 3630,
+      "warmups": [
+        {
+          "cpuMs": 0.546832,
+          "wallMs": 0.532356,
+          "sampleCpuMs": 1985,
+          "sampleWallMs": 1932.4536,
+          "iterations": 3630,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.525069,
+          "wallMs": 0.52663,
+          "sampleCpuMs": 1906,
+          "sampleWallMs": 1911.6651,
+          "iterations": 3630,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        }
+      ],
+      "rounds": [
+        {
+          "cpuMs": 0.486501,
+          "wallMs": 0.502095,
+          "sampleCpuMs": 1766,
+          "sampleWallMs": 1822.6051,
+          "iterations": 3630,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.512121,
+          "wallMs": 0.52357,
+          "sampleCpuMs": 1859,
+          "sampleWallMs": 1900.5608,
+          "iterations": 3630,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.533884,
+          "wallMs": 0.51435,
+          "sampleCpuMs": 1938,
+          "sampleWallMs": 1867.0912,
+          "iterations": 3630,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.529201,
+          "wallMs": 0.534761,
+          "sampleCpuMs": 1921,
+          "sampleWallMs": 1941.1818,
+          "iterations": 3630,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.512397,
+          "wallMs": 0.500246,
+          "sampleCpuMs": 1860,
+          "sampleWallMs": 1815.8936,
+          "iterations": 3630,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.482369,
+          "wallMs": 0.490787,
+          "sampleCpuMs": 1751,
+          "sampleWallMs": 1781.5583,
+          "iterations": 3630,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        },
+        {
+          "cpuMs": 0.516529,
+          "wallMs": 0.507594,
+          "sampleCpuMs": 1875,
+          "sampleWallMs": 1842.5648,
+          "iterations": 3630,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 1298907385
+          }
+        }
+      ],
+      "summary": {
+        "cpuMedianMs": 0.512397,
+        "cpuMeanMs": 0.510429,
+        "cpuCv": 0.035562,
+        "wallMedianMs": 0.507594
+      },
+      "output": {
+        "totalBytes": 16777216,
+        "sha256": "d59fcee807ed4a3b1febe4dc393ca64f7d4e4faeedcb9e1a927dee8712fc20d5"
+      },
+      "proxy": {
+        "sends": 1024,
+        "allocatedBuffersProxy": 0,
+        "copiedBytesProxy": 0,
+        "arrayBuffersPeakBytes": 0,
+        "handlerPath": "worker-xhttp-stream-one",
+        "inputViews": 1024,
+        "readerReadsProxy": 1025,
+        "pumpWriteAwaitsProxy": 1024,
+        "syncEnqueuesProxy": 1024,
+        "completionPromisesProxy": 0,
+        "backpressureWaitsProxy": 0,
+        "flushAwaitsProxy": 1
+      }
+    },
+    {
+      "profile": "uplink-64kib",
+      "chunkBytes": 65536,
+      "calibration": {
+        "status": "ready",
+        "reason": null,
+        "targetCpuMs": 2000,
+        "minCpuMs": 1500,
+        "maxCpuMs": 3500,
+        "selectedIterations": 13181,
+        "sampleCpuMs": 2031,
+        "sampleWallMs": 1955.5651,
+        "iterations": 13181,
+        "output": {
+          "totalBytes": 16777216,
+          "orderToken": 2350810522
+        },
+        "stages": [
+          {
+            "iterations": 1,
+            "sampleCpuMedianMs": 0,
+            "sampleWallMedianMs": 0.3406,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "continue",
+            "reason": null,
+            "nextIterations": 5872,
+            "samples": [
+              {
+                "cpuMs": 0,
+                "wallMs": 0.3406,
+                "sampleCpuMs": 0,
+                "sampleWallMs": 0.3406,
+                "iterations": 1,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0,
+                "wallMs": 0.3322,
+                "sampleCpuMs": 0,
+                "sampleWallMs": 0.3322,
+                "iterations": 1,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0,
+                "wallMs": 0.3504,
+                "sampleCpuMs": 0,
+                "sampleWallMs": 0.3504,
+                "iterations": 1,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              }
+            ]
+          },
+          {
+            "iterations": 5872,
+            "sampleCpuMedianMs": 891,
+            "sampleWallMedianMs": 852.7607,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "continue",
+            "reason": null,
+            "nextIterations": 13181,
+            "samples": [
+              {
+                "cpuMs": 0.157016,
+                "wallMs": 0.145229,
+                "sampleCpuMs": 922,
+                "sampleWallMs": 852.7835,
+                "iterations": 5872,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0.151737,
+                "wallMs": 0.145225,
+                "sampleCpuMs": 891,
+                "sampleWallMs": 852.7607,
+                "iterations": 5872,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0.151567,
+                "wallMs": 0.144532,
+                "sampleCpuMs": 890,
+                "sampleWallMs": 848.6907,
+                "iterations": 5872,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              }
+            ]
+          },
+          {
+            "iterations": 13181,
+            "sampleCpuMedianMs": 2031,
+            "sampleWallMedianMs": 1955.5651,
+            "targetCpuMs": 2000,
+            "minCpuMs": 1500,
+            "maxCpuMs": 3500,
+            "status": "ready",
+            "reason": null,
+            "selectedIterations": 13181,
+            "samples": [
+              {
+                "cpuMs": 0.155375,
+                "wallMs": 0.146244,
+                "sampleCpuMs": 2048,
+                "sampleWallMs": 1927.6482,
+                "iterations": 13181,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0.152947,
+                "wallMs": 0.148362,
+                "sampleCpuMs": 2016,
+                "sampleWallMs": 1955.5651,
+                "iterations": 13181,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              },
+              {
+                "cpuMs": 0.154085,
+                "wallMs": 0.149985,
+                "sampleCpuMs": 2031,
+                "sampleWallMs": 1976.9532,
+                "iterations": 13181,
+                "output": {
+                  "totalBytes": 16777216,
+                  "orderToken": 2350810522
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "measurementIterations": 13181,
+      "warmups": [
+        {
+          "cpuMs": 0.150596,
+          "wallMs": 0.142353,
+          "sampleCpuMs": 1985,
+          "sampleWallMs": 1876.3534,
+          "iterations": 13181,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.143388,
+          "wallMs": 0.14326,
+          "sampleCpuMs": 1890,
+          "sampleWallMs": 1888.3154,
+          "iterations": 13181,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        }
+      ],
+      "rounds": [
+        {
+          "cpuMs": 0.144678,
+          "wallMs": 0.144592,
+          "sampleCpuMs": 1907,
+          "sampleWallMs": 1905.8736,
+          "iterations": 13181,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.158789,
+          "wallMs": 0.149895,
+          "sampleCpuMs": 2093,
+          "sampleWallMs": 1975.7725,
+          "iterations": 13181,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.155375,
+          "wallMs": 0.147958,
+          "sampleCpuMs": 2048,
+          "sampleWallMs": 1950.2309,
+          "iterations": 13181,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.168273,
+          "wallMs": 0.15185,
+          "sampleCpuMs": 2218,
+          "sampleWallMs": 2001.5347,
+          "iterations": 13181,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.160003,
+          "wallMs": 0.147201,
+          "sampleCpuMs": 2109,
+          "sampleWallMs": 1940.2588,
+          "iterations": 13181,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.156513,
+          "wallMs": 0.13992,
+          "sampleCpuMs": 2063,
+          "sampleWallMs": 1844.2833,
+          "iterations": 13181,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        },
+        {
+          "cpuMs": 0.157651,
+          "wallMs": 0.136394,
+          "sampleCpuMs": 2078,
+          "sampleWallMs": 1797.8056,
+          "iterations": 13181,
+          "output": {
+            "totalBytes": 16777216,
+            "orderToken": 2350810522
+          }
+        }
+      ],
+      "summary": {
+        "cpuMedianMs": 0.157651,
+        "cpuMeanMs": 0.157326,
+        "cpuCv": 0.041171,
+        "wallMedianMs": 0.147201
+      },
+      "output": {
+        "totalBytes": 16777216,
+        "sha256": "d59fcee807ed4a3b1febe4dc393ca64f7d4e4faeedcb9e1a927dee8712fc20d5"
+      },
+      "proxy": {
+        "sends": 256,
+        "allocatedBuffersProxy": 0,
+        "copiedBytesProxy": 0,
+        "arrayBuffersPeakBytes": 0,
+        "handlerPath": "worker-xhttp-stream-one",
+        "inputViews": 256,
+        "readerReadsProxy": 257,
+        "pumpWriteAwaitsProxy": 256,
+        "syncEnqueuesProxy": 0,
+        "completionPromisesProxy": 256,
+        "backpressureWaitsProxy": 0,
+        "flushAwaitsProxy": 1
+      }
+    }
+  ]
+}

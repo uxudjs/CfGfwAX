@@ -54,3 +54,8 @@ log/
 
 # 测试文件
 *.test.mjs
+!xhttp_stream_benchmark.test.mjs
+!xhttp_stream.test.mjs
+!xhttp_stream_uplink.test.mjs
+!xhttp_stream_downlink.test.mjs
+!xhttp_stream_lifecycle.test.mjs
