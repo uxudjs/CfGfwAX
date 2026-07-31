@@ -1,62 +1,40 @@
-# Tasks: XHTTP stream-one CPU 瓶颈修复
+# Tasks: SOCKS5/HTTP XHTTP 子 KiB CPU 优化
 
-## 前序任务合并
+## Phase 1：规格与计划
 
-- [x] 冻结工作树、工具链与生产基线。
-- [x] 建立初版 CPU、分配和字节正确性基准。
-- [x] 完成初版 XHTTP 上下行切片与回滚证据。
-- [x] 完成 BYOB 所有权审查并按用户决定跳过不安全实现。
-- [x] 首次本地性能门因 CPU CV 超限判定 NO-GO，并由下列可信测量与完整 pump 任务取代。
+- [x] 规格限定为 XHTTP TCP + 显式 SOCKS5/HTTP。
+- [x] 明确非目标、兼容契约、性能门和生产边界。
+- [x] 计划完成依赖、验收、验证和回滚自审。
 
-## Phase 1：可信测量
+## Phase 2：RED 与测量
 
-- [x] Task 1：为异常校准与截断添加 RED 测试。
-- [x] Task 1：实现分阶段、多样本校准。
-- [x] Task 1：连续两次严格 all-profile 基准全部 `CPU CV ≤ 10%`。
-- [x] Checkpoint A：人工复核样本时长、逻辑字节量与环境指纹。
+- [x] 加入 64/128/256/512 B 三方向基准 profile。
+- [x] 添加 Trojan 分片首包 SHA 次数 RED。
+- [x] 添加显式 SOCKS5/HTTP 原生 pipeTo RED。
+- [x] 记录修改前兼容泵证据。
 
-## Phase 2：生产模型对齐
+## Phase 3：实现
 
-- [x] Task 2：建立完整 XHTTP request-body/downlink pump 基准。
-- [x] Task 2：记录真实 await、读取、背压、flush、分配和复制代理。
-- [x] Task 2：同版基准采集优化前与当前基线。
-- [x] Task 2A：为多 profile 基准增加逐 profile Node 进程隔离。
-- [x] Task 2A：增加自适应稳态门，移除强制 GC，并仅对预热耗尽做一次受限重采样。
-- [x] Task 2A：验证父进程拒绝非 PID 环境指纹漂移，正式测量失败不重试。
-- [x] Checkpoint A2：连续两次严格 all-profile 全部 `CPU CV ≤ 10%`。
-- [x] Checkpoint A2：每轮 9 个不同 PID，代理计数和输出 SHA 不变。
+- [x] Trojan SHA-224 不足 58 字节不计算、每请求最多一次。
+- [x] 原生 pipeTo 候选完成并通过功能测试。
+- [x] VLESS 响应头一次、Trojan 无响应头的候选行为通过。
+- [x] EOF、错误与非目标回退的候选行为通过。
+- [x] 原生候选未达性能门，已从 Worker 回滚并保留 NO-GO 证据。
 
-## Phase 3：XHTTP-only 实现
+## Phase 4：验收
 
-- [x] Task 3：分离入站传输和出站代理诊断字段。
-- [x] Task 3：证明 WS/gRPC 行为未变。
-- [x] Task 4：完成小块上行 fast path 严格 A/B，因未达 CPU 门判定 NO-GO 并回退。
-- [x] Task 4：保留 64 KiB 无回退证据及完整失败分析。
-- [x] Task 5：建立 XHTTP-only 下行 pump。
-- [x] Task 5：验证首包一次、字节顺序、取消、EOF 和交互延迟。
-- [x] Task 5：确认生产路径没有虚假 buffer-reuse 能力。
+- [x] 决定性 64 B 双向公平对照两组 CV ≤ 10%。
+- [x] 修正双向夹具的两条空管道偏差，并以两条真实 `pipeTo` 重跑公平门。
+- [x] 原生候选未达到下降 ≥50%：中位数点估计低约 4.5%，但处于本地观测波动尺度内，未证明可重复收益，仍判定 NO-GO。
+- [x] 原生候选已回滚，因此无需继续执行其 1/16/64 KiB 回退门。
+- [x] 完整 `node --test --test-reporter=dot` 通过。
+- [x] `_worker.js` 语法检查通过。
+- [x] Git 差异检查通过。
+- [x] CHANGELOG 仅追加本任务说明并保留用户已有改动。
+- [x] NO-GO 报告与两份公平原始 JSON 可由 Git 跟踪。
 
-## Phase 4：本地门与回滚
+## Phase 5：生产边界
 
-- [x] Checkpoint B：连续两次 all-profile 稳定性通过。
-- [x] Checkpoint B：`node --test`（94/94）。
-- [x] Checkpoint B：`node --check _worker.js`。
-- [x] Checkpoint B：`node --check work-products/benchmarks/xhttp_stream_benchmark.mjs`。
-- [x] Checkpoint B：`git diff --check`。
-- [x] Task 6：从冻结基线重建并隔离验证任务级 reverse patch。
-- [x] Task 6：审计最终 diff 只触及批准范围。
-
-## Phase 4A：路径标准化
-
-- [x] Task 6A：迁移基准程序、诊断证据与回滚材料，并同步所有引用。
-- [x] Task 6A：通过完整 Node、语法、路径和 Git 差异检查。
-
-## Phase 5：用户手动生产验收
-
-- [x] Task 7：用户手动部署。
-- [ ] Task 7：收集至少 24 小时、1,000 次调用的 Cloudflare 指标。
-- [ ] Task 7：验证 `exceededCpu < 1%`、相对下降至少 80%、CPU P90 `< 10 ms`。
-- [ ] Task 7：完成 3 个 Codex 长连接会话实测。
-- [ ] Task 7：Cloudflare 与 Codex 双门通过后给出 GO；否则回滚。
-
-> 2026-07-30：用户已完成 Cloudflare 实地部署与 Codex 长连接试用，当前未观察到超时或断流；量化指标及 3 会话正式验收门仍待补充。
+- [ ] 用户手动部署。
+- [ ] 收集 Cloudflare CPU/exceededCpu 与真实客户端证据。
+- [ ] 生产证据通过后再标记完整 GO。

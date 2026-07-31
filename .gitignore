@@ -66,3 +66,8 @@ log/
 !/work-products/tests/**
 !/work-products/benchmarks/
 !/work-products/benchmarks/**
+!/work-products/debug/
+/work-products/debug/*
+!/work-products/debug/xhttp-native-pipe-no-go.md
+!/work-products/debug/xhttp-tiny-stream-pump-64b.json
+!/work-products/debug/xhttp-tiny-native-fair-64b.json

@@ -740,6 +740,14 @@ function 有效数据长度(data) {
 
 async function 读取XHTTP首包(reader, token) {
 	const decoder = VLESS文本解码器;
+	let 木马密码哈希字节 = null;
+	const 获取木马密码哈希字节 = () => {
+		if (!木马密码哈希字节) {
+			const 密码哈希 = sha224(token);
+			木马密码哈希字节 = new TextEncoder().encode(密码哈希);
+		}
+		return 木马密码哈希字节;
+	};
 
 	const 尝试解析魏烈思首包 = (data) => {
 		const length = data.byteLength;
@@ -800,10 +808,9 @@ async function 读取XHTTP首包(reader, token) {
 	};
 
 	const 尝试解析木马首包 = (data) => {
-		const 密码哈希 = sha224(token);
-		const 密码哈希字节 = new TextEncoder().encode(密码哈希);
 		const length = data.byteLength;
 		if (length < 58) return { 状态: 'need_more' };
+		const 密码哈希字节 = 获取木马密码哈希字节();
 		if (data[56] !== 0x0d || data[57] !== 0x0a) return { 状态: 'invalid' };
 		for (let i = 0; i < 56; i++) {
 			if (data[i] !== 密码哈希字节[i]) return { 状态: 'invalid' };

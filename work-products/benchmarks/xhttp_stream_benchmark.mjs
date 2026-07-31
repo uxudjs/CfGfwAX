@@ -26,6 +26,10 @@ const CPU_STABILITY_LIMIT = 0.10;
 const STEADY_STATE_CV_LIMIT = CPU_STABILITY_LIMIT;
 const STEADY_STATE_TREND_LIMIT = CPU_STABILITY_LIMIT;
 const CHUNK_SIZES = new Map([
+	['64b', 64],
+	['128b', 128],
+	['256b', 256],
+	['512b', 512],
 	['1kib', KIB],
 	['16kib', 16 * KIB],
 	['64kib', 64 * KIB],
@@ -76,8 +80,8 @@ export function parseBenchmarkOptions(argv) {
 	if (options.profile !== 'all' && !DIRECTIONS.includes(options.profile) && !ALL_PROFILES.includes(options.profile)) {
 		throw new Error(`Unknown profile: ${options.profile}`);
 	}
-	if (!['auto', 'legacy'].includes(options.uplinkStrategy)) throw new Error(`Unknown uplink strategy: ${options.uplinkStrategy}`);
-	if (!['auto', 'shared-grain'].includes(options.downlinkStrategy)) throw new Error(`Unknown downlink strategy: ${options.downlinkStrategy}`);
+	if (!['auto', 'legacy', 'stream-pump', 'native'].includes(options.uplinkStrategy)) throw new Error(`Unknown uplink strategy: ${options.uplinkStrategy}`);
+	if (!['auto', 'shared-grain', 'stream-pump', 'native'].includes(options.downlinkStrategy)) throw new Error(`Unknown downlink strategy: ${options.downlinkStrategy}`);
 	return options;
 }
 
@@ -183,7 +187,94 @@ function createSink(expectedBytes, inputBuffer, { captureOutput, trackProxy }) {
 	};
 }
 
+function createChunkedReadable(bytes, chunkBytes, onRead) {
+	let offset = 0;
+	return new ReadableStream({
+		pull(controller) {
+			onRead();
+			if (offset >= bytes.byteLength) {
+				controller.close();
+				return;
+			}
+			const chunk = bytes.subarray(offset, Math.min(offset + chunkBytes, bytes.byteLength));
+			offset += chunk.byteLength;
+			controller.enqueue(chunk);
+		},
+	});
+}
+
+async function pumpReadableToWritable(readable, writable) {
+	const reader = readable.getReader();
+	const writer = writable.getWriter();
+	try {
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) break;
+			if (value?.byteLength) await writer.write(value);
+		}
+		await writer.close();
+	} finally {
+		try { reader.releaseLock() } catch (e) { }
+		try { writer.releaseLock() } catch (e) { }
+	}
+}
+
+async function pipeNativeStreams(requestBody, remoteSocket, responseWritable) {
+	await Promise.all([
+		requestBody.pipeTo(remoteSocket.writable),
+		remoteSocket.readable.pipeTo(responseWritable),
+	]);
+}
+
+async function executeStreamPumpUplink(chunkBytes, fixture, options) {
+	const sink = createSink(fixture.bytes.byteLength, fixture.bytes.buffer, options);
+	let readerReadsProxy = 0;
+	const requestBody = createChunkedReadable(fixture.bytes, chunkBytes, () => { readerReadsProxy++ });
+	await pumpReadableToWritable(requestBody, new WritableStream({ write(chunk) { sink.write(chunk) } }));
+	const result = sink.finalize();
+	return {
+		...result,
+		proxy: {
+			...result.proxy,
+			handlerPath: 'worker-xhttp-stream-pump',
+			inputViews: Math.ceil(fixture.bytes.byteLength / chunkBytes),
+			readerReadsProxy,
+			pumpWriteAwaitsProxy: Math.ceil(fixture.bytes.byteLength / chunkBytes),
+			syncEnqueuesProxy: 0,
+			completionPromisesProxy: 0,
+			backpressureWaitsProxy: 0,
+			flushAwaitsProxy: 0,
+			nativePipe: false,
+		},
+	};
+}
+
+async function executeNativeUplink(chunkBytes, fixture, options) {
+	const sink = createSink(fixture.bytes.byteLength, fixture.bytes.buffer, options);
+	let readerReadsProxy = 0;
+	const requestBody = createChunkedReadable(fixture.bytes, chunkBytes, () => { readerReadsProxy++ });
+	await requestBody.pipeTo(new WritableStream({ write(chunk) { sink.write(chunk) } }));
+	const result = sink.finalize();
+	return {
+		...result,
+		proxy: {
+			...result.proxy,
+			handlerPath: 'worker-xhttp-native-pipe',
+			inputViews: Math.ceil(fixture.bytes.byteLength / chunkBytes),
+			readerReadsProxy,
+			pumpWriteAwaitsProxy: 0,
+			syncEnqueuesProxy: 0,
+			completionPromisesProxy: 0,
+			backpressureWaitsProxy: 0,
+			flushAwaitsProxy: 0,
+			nativePipe: true,
+		},
+	};
+}
+
 async function executeUplink(chunkBytes, fixture, options) {
+	if (options.uplinkStrategy === 'stream-pump') return executeStreamPumpUplink(chunkBytes, fixture, options);
+	if (options.uplinkStrategy === 'native') return executeNativeUplink(chunkBytes, fixture, options);
 	const { 创建上行写入队列, 转发XHTTP上行请求体 } = (await loadWorkerInternals(options.workerSource)).module;
 	const sink = createSink(fixture.bytes.byteLength, fixture.bytes.buffer, options);
 	const writer = {
@@ -258,10 +349,106 @@ async function executeUplink(chunkBytes, fixture, options) {
 					backpressureWaitsProxy,
 					flushAwaitsProxy,
 				},
-			};
+	};
+}
+
+async function executeStreamPumpDownlink(chunkBytes, fixture, options) {
+	const sink = createSink(fixture.bytes.byteLength, fixture.bytes.buffer, options);
+	let readerReadsProxy = 0;
+	const remoteReadable = createChunkedReadable(fixture.bytes, chunkBytes, () => { readerReadsProxy++ });
+	await pumpReadableToWritable(remoteReadable, new WritableStream({ write(chunk) { sink.write(chunk) } }));
+	const result = sink.finalize();
+	return {
+		...result,
+		proxy: {
+			...result.proxy,
+			handlerPath: 'worker-xhttp-stream-pump',
+			inputViews: Math.ceil(fixture.bytes.byteLength / chunkBytes),
+			readerReadsProxy,
+			pumpSendAwaitsProxy: Math.ceil(fixture.bytes.byteLength / chunkBytes),
+			flushAwaitsProxy: 0,
+			grainCopiedBytesProxy: 0,
+			bufferReuseCapabilityProxy: false,
+			downlinkStrategy: 'stream-pump',
+			nativePipe: false,
+		},
+	};
+}
+
+async function executeNativeDownlink(chunkBytes, fixture, options) {
+	const sink = createSink(fixture.bytes.byteLength, fixture.bytes.buffer, options);
+	let readerReadsProxy = 0;
+	const remoteReadable = createChunkedReadable(fixture.bytes, chunkBytes, () => { readerReadsProxy++ });
+	await remoteReadable.pipeTo(new WritableStream({ write(chunk) { sink.write(chunk) } }));
+	const result = sink.finalize();
+	return {
+		...result,
+		proxy: {
+			...result.proxy,
+			handlerPath: 'worker-xhttp-native-pipe',
+			inputViews: Math.ceil(fixture.bytes.byteLength / chunkBytes),
+			readerReadsProxy,
+			pumpSendAwaitsProxy: 0,
+			flushAwaitsProxy: 0,
+			grainCopiedBytesProxy: 0,
+			bufferReuseCapabilityProxy: false,
+			downlinkStrategy: 'native',
+			nativePipe: true,
+		},
+	};
+}
+
+async function executeNativeBidirectional(chunkBytes, fixture, options) {
+	const uplinkSink = createSink(fixture.bytes.byteLength, fixture.bytes.buffer, options);
+	const downlinkSink = createSink(fixture.bytes.byteLength, fixture.bytes.buffer, options);
+	let uplinkReads = 0;
+	let downlinkReads = 0;
+	const requestBody = createChunkedReadable(fixture.bytes, chunkBytes, () => { uplinkReads++ });
+	const remoteSocket = {
+		writable: new WritableStream({ write(chunk) { uplinkSink.write(chunk) } }),
+		readable: createChunkedReadable(fixture.bytes, chunkBytes, () => { downlinkReads++ }),
+	};
+	await pipeNativeStreams(
+		requestBody,
+		remoteSocket,
+		new WritableStream({ write(chunk) { downlinkSink.write(chunk) } }),
+	);
+	const uplink = uplinkSink.finalize();
+	const downlink = downlinkSink.finalize();
+	return {
+		output: { uplink: uplink.output, downlink: downlink.output },
+		proxy: {
+			uplink: {
+				...uplink.proxy,
+				handlerPath: 'worker-xhttp-native-pipe',
+				inputViews: Math.ceil(fixture.bytes.byteLength / chunkBytes),
+				readerReadsProxy: uplinkReads,
+				pumpWriteAwaitsProxy: 0,
+				syncEnqueuesProxy: 0,
+				completionPromisesProxy: 0,
+				backpressureWaitsProxy: 0,
+				flushAwaitsProxy: 0,
+				nativePipe: true,
+			},
+			downlink: {
+				...downlink.proxy,
+				handlerPath: 'worker-xhttp-native-pipe',
+				inputViews: Math.ceil(fixture.bytes.byteLength / chunkBytes),
+				readerReadsProxy: downlinkReads,
+				pumpSendAwaitsProxy: 0,
+				flushAwaitsProxy: 0,
+				grainCopiedBytesProxy: 0,
+				bufferReuseCapabilityProxy: false,
+				downlinkStrategy: 'native',
+				nativePipe: true,
+			},
+		},
+	};
 }
 
 async function executeDownlink(chunkBytes, fixture, options) {
+	if (options.downlinkStrategy === 'stream-pump') return executeStreamPumpDownlink(chunkBytes, fixture, options);
+	if (options.downlinkStrategy === 'native') return executeNativeDownlink(chunkBytes, fixture, options);
 	const internals = await loadWorkerInternals(options.workerSource);
 	const { connectStreams } = options.trackProxy ? internals.proxyModule : internals.module;
 	const sink = createSink(fixture.bytes.byteLength, fixture.bytes.buffer, options);
@@ -324,6 +511,9 @@ async function executeProfile(profile, fixture, options) {
 	const { direction, chunkBytes } = parseProfile(profile);
 	if (direction === 'uplink') return executeUplink(chunkBytes, fixture, options);
 	if (direction === 'downlink') return executeDownlink(chunkBytes, fixture, options);
+	if (options.uplinkStrategy === 'native' && options.downlinkStrategy === 'native') {
+		return executeNativeBidirectional(chunkBytes, fixture, options);
+	}
 	const [uplink, downlink] = await Promise.all([
 		executeUplink(chunkBytes, fixture, options),
 		executeDownlink(chunkBytes, fixture, options),
@@ -334,9 +524,9 @@ async function executeProfile(profile, fixture, options) {
 	};
 }
 
-export async function runProfileOnce(profile, fixture, { trackProxy = false, workerSource = null, downlinkStrategy = 'auto' } = {}) {
-		return executeProfile(profile, fixture, { captureOutput: true, trackProxy, workerSource, downlinkStrategy });
-	}
+export async function runProfileOnce(profile, fixture, { trackProxy = false, workerSource = null, uplinkStrategy = 'auto', downlinkStrategy = 'auto' } = {}) {
+	return executeProfile(profile, fixture, { captureOutput: true, trackProxy, workerSource, uplinkStrategy, downlinkStrategy });
+}
 
 function median(values) {
 	const sorted = [...values].sort((a, b) => a - b);
