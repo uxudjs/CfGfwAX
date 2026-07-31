@@ -69,5 +69,6 @@ log/
 !/work-products/debug/
 /work-products/debug/*
 !/work-products/debug/xhttp-native-pipe-no-go.md
+!/work-products/debug/xhttp-concurrent-cpu-timeout.md
 !/work-products/debug/xhttp-tiny-stream-pump-64b.json
 !/work-products/debug/xhttp-tiny-native-fair-64b.json

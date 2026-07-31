@@ -4,8 +4,8 @@ import test from 'node:test';
 
 const source = await readFile(new URL('../../_worker.js', import.meta.url), 'utf8');
 if (!globalThis.WebSocket) globalThis.WebSocket = { OPEN: 1, CLOSING: 2, CLOSED: 3 };
-const moduleUrl = `data:text/javascript;base64,${Buffer.from(`${source}\nexport { 创建上行写入队列 };`).toString('base64')}`;
-const { 创建上行写入队列 } = await import(moduleUrl);
+const moduleUrl = `data:text/javascript;base64,${Buffer.from(`${source}\nexport { 创建上行写入队列, 转发XHTTP上行请求体 };`).toString('base64')}`;
+const { 创建上行写入队列, 转发XHTTP上行请求体 } = await import(moduleUrl);
 
 function deferred() {
 	let resolve, reject;
@@ -44,6 +44,60 @@ test('XHTTP 上行在 64 KiB 或 64 条达到高水位', () => {
 	assert.equal(itemsQueue.达到高水位(), true);
 	assert.deepEqual(itemsQueue.状态(), { bytes: 64, items: 64, high: true, low: false });
 	itemsQueue.清空();
+});
+
+test('XHTTP 上行同步入队成功时不额外让出微任务', async () => {
+	const events = [];
+	let reads = 0;
+	const reader = {
+		read() {
+			events.push(`read-${++reads}`);
+			return Promise.resolve(reads === 1
+				? { done: false, value: new Uint8Array([1]) }
+				: { done: true });
+		},
+	};
+
+	await 转发XHTTP上行请求体(reader, () => {
+		events.push('write');
+		queueMicrotask(() => events.push('write-microtask'));
+		return true;
+	});
+
+	assert.deepEqual(events, ['read-1', 'write', 'read-2', 'write-microtask']);
+});
+
+test('XHTTP 上行异步背压仍等待并保留失败语义', async () => {
+	const gate = deferred();
+	let reads = 0;
+	const reader = {
+		async read() {
+			reads++;
+			return reads === 1
+				? { done: false, value: new Uint8Array([1]) }
+				: { done: true };
+		},
+	};
+	const forwarding = 转发XHTTP上行请求体(reader, () => gate.promise);
+
+	await Promise.resolve();
+	await Promise.resolve();
+	assert.equal(reads, 1);
+	gate.resolve(true);
+	await forwarding;
+	assert.equal(reads, 2);
+
+	let failedReads = 0;
+	await assert.rejects(
+		转发XHTTP上行请求体({
+			async read() {
+				failedReads++;
+				return { done: false, value: new Uint8Array([1]) };
+			},
+		}, () => Promise.resolve(false)),
+		/Remote socket is not ready/,
+	);
+	assert.equal(failedReads, 1);
 });
 
 test('XHTTP 上行慢 writer 只在 16 KiB 且不超过 16 条时恢复，并形成合包', async () => {

@@ -1,4 +1,4 @@
-const Version = '2.4.3';
+const Version = '2.4.4';
 let config_JSON, 缓存SOCKS5白名单 = null, 调试日志打印 = false;
 let SOCKS5白名单 = ['*tapecontent.net', '*cloudatacdn.com', '*loadshare.org', '*cdn-centaurus.com', 'scholar.google.com'];
 const Pages静态页面 = 'https://uxudjs.github.io/CGAX-Pages';
@@ -569,7 +569,9 @@ async function 转发XHTTP上行请求体(reader, 写入远端) {
 		const { done, value } = await reader.read();
 		if (done) return;
 		if (!value || value.byteLength === 0) continue;
-		if (!(await 写入远端(value))) throw new Error('Remote socket is not ready');
+		const 写入结果 = 写入远端(value);
+		const 写入成功 = 写入结果 && typeof 写入结果.then === 'function' ? await 写入结果 : 写入结果;
+		if (!写入成功) throw new Error('Remote socket is not ready');
 	}
 }
 
@@ -665,12 +667,12 @@ async function 处理XHTTP请求(request, yourUUID, 反代上下文 = {}) {
 					名称: 'XHTTP上行'
 				});
 
-				const 写入远端 = async (payload, allowRetry = true) => {
+				const 写入远端 = (payload, allowRetry = true) => {
 					if ((payload?.byteLength || 0) >= 上行背压高水位字节) {
-						return await 上行写入队列.直接写入并等待(payload, allowRetry);
+						return 上行写入队列.直接写入并等待(payload, allowRetry);
 					}
 					if (!上行写入队列.写入(payload, allowRetry)) return false;
-					if (上行写入队列.达到高水位()) await 上行写入队列.等待低水位();
+					if (上行写入队列.达到高水位()) return 上行写入队列.等待低水位().then(() => true);
 					return true;
 				};
 

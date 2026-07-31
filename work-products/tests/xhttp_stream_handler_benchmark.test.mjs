@@ -5,14 +5,14 @@ import {
 	runProfileOnce,
 } from '../benchmarks/xhttp_stream_benchmark.mjs';
 
-test('handler-level 上行基准经过请求体读取并复现逐块 await', async () => {
+test('handler-level 上行基准同步入队时不逐块 await', async () => {
 	const fixture = createDeterministicFixture(128 * 1024);
 	const result = await runProfileOnce('uplink-1kib', fixture, { trackProxy: true });
 
 	assert.equal(result.proxy.handlerPath, 'worker-xhttp-stream-one');
 	assert.equal(result.proxy.inputViews, 128);
 	assert.equal(result.proxy.readerReadsProxy, 129);
-	assert.equal(result.proxy.pumpWriteAwaitsProxy, 128);
+	assert.equal(result.proxy.pumpWriteAwaitsProxy, 0);
 	assert.equal(result.proxy.syncEnqueuesProxy, 128);
 	assert.equal(result.proxy.flushAwaitsProxy, 1);
 	assert.equal(result.output.sha256, fixture.sha256);

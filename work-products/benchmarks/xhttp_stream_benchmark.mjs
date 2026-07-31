@@ -312,24 +312,22 @@ async function executeUplink(chunkBytes, fixture, options) {
 			return { done: false, value: chunk };
 		},
 	};
-	const 写入远端 = async chunk => {
-		pumpWriteAwaitsProxy++;
+	const 写入远端 = chunk => {
 		if (usesBufferedXhttpPath && chunk.byteLength < 64 * KIB) {
 			if (!queue.写入(chunk, false)) throw new Error('benchmark queue rejected chunk');
 			syncEnqueuesProxy++;
 			if (queue.达到高水位()) {
 				backpressureWaitsProxy++;
-				await queue.等待低水位();
+				pumpWriteAwaitsProxy++;
+				return queue.等待低水位().then(() => true);
 			}
-		} else if (!(await (typeof queue.直接写入并等待 === 'function'
-				? queue.直接写入并等待(chunk, false)
-				: queue.写入并等待(chunk, false)))) {
-			completionPromisesProxy++;
-			throw new Error('benchmark queue rejected chunk');
-		} else {
-			completionPromisesProxy++;
+			return true;
 		}
-		return true;
+		pumpWriteAwaitsProxy++;
+		completionPromisesProxy++;
+		return (typeof queue.直接写入并等待 === 'function'
+			? queue.直接写入并等待(chunk, false)
+			: queue.写入并等待(chunk, false));
 	};
 	await 转发XHTTP上行请求体(reader, 写入远端);
 	flushAwaitsProxy++;
