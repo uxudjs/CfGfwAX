@@ -28,7 +28,7 @@ const { default: worker, 追加API备注, base64SecretEncode, 读取config_JSON,
 		{ waitUntil() { } },
 	);
 	assert.equal(response.status, 200);
-	assert.deepEqual(await response.json(), { Version: '2.4.11' });
+	assert.deepEqual(await response.json(), { Version: '2.4.12' });
 }
 
 {
