@@ -1,40 +1,43 @@
-# Tasks: SOCKS5/HTTP XHTTP 子 KiB CPU 优化
+# Tasks: 连接场景预设与自定义
 
-## Phase 1：规格与计划
+## Phase 1：RED 合同
 
-- [x] 规格限定为 XHTTP TCP + 显式 SOCKS5/HTTP。
-- [x] 明确非目标、兼容契约、性能门和生产边界。
-- [x] 计划完成依赖、验收、验证和回滚自审。
+- [x] T1.1 扩展 `../../CGAX-Pages/work-products/tests/connection-settings.test.mjs`，断言五项选择与四组精确映射。
+- [x] T1.2 断言选择、读取、精确推断和手动同步入口。
+- [x] T1.3 断言 `custom` 不写值及四类限制说明。
+- [x] T1.4 确认新断言 RED、既有连接设置断言仍通过，并保留失败证据。
 
-## Phase 2：RED 与测量
+## Phase 2：管理页实现
 
-- [x] 加入 64/128/256/512 B 三方向基准 profile。
-- [x] 添加 Trojan 分片首包 SHA 次数 RED。
-- [x] 添加显式 SOCKS5/HTTP 原生 pipeTo RED。
-- [x] 记录修改前兼容泵证据。
+- [x] T2.1 在四项设置前加入可访问的场景 `<select>`、说明区和五个选项。
+- [x] T2.2 加入不可变预设映射及读取、填充、精确推断小函数。
+- [x] T2.3 打通选择预设、手动修改、加载、取消修改和保存后刷新。
+- [x] T2.4 保持 `currentConfig.连接设置` 四字段、现有校验和 checkbox 布局不变。
+- [x] T2.5 连接设置与前端性能回归 GREEN，CGAX-Pages `git diff --check` 通过。
 
-## Phase 3：实现
+## Checkpoint A：前端功能与视觉
 
-- [x] Trojan SHA-224 不足 58 字节不计算、每请求最多一次。
-- [x] 原生 pipeTo 候选完成并通过功能测试。
-- [x] VLESS 响应头一次、Trojan 无响应头的候选行为通过。
-- [x] EOF、错误与非目标回退的候选行为通过。
-- [x] 原生候选未达性能门，已从 Worker 回滚并保留 NO-GO 证据。
+- [ ] A1 四个预设值、动态说明、修改状态和 `custom` 保值行为正确。
+- [ ] A2 保存、刷新和取消修改后推断正确。
+- [ ] A3 键盘交互与控制台检查通过。
+- [ ] A4 320、768、1024、1440 px 无横向溢出或控件拉伸。
+- [x] A5 `/login/`、`/admin/`、`/noADMIN/`、`/noKV/` 烟测通过。
+- [ ] A6 桌面与移动端前后对比截图保存在 `../../CGAX-Pages/work-products/debug/`。
 
-## Phase 4：验收
+## Phase 3：文档与发布
 
-- [x] 决定性 64 B 双向公平对照两组 CV ≤ 10%。
-- [x] 修正双向夹具的两条空管道偏差，并以两条真实 `pipeTo` 重跑公平门。
-- [x] 原生候选未达到下降 ≥50%：中位数点估计低约 4.5%，但处于本地观测波动尺度内，未证明可重复收益，仍判定 NO-GO。
-- [x] 原生候选已回滚，因此无需继续执行其 1/16/64 KiB 回退门。
-- [x] 完整 `node --test --test-reporter=dot` 通过。
-- [x] `_worker.js` 语法检查通过。
-- [x] Git 差异检查通过。
-- [x] CHANGELOG 仅追加本任务说明并保留用户已有改动。
-- [x] NO-GO 报告与两份公平原始 JSON 可由 Git 跟踪。
+- [x] T3.1 同步 README 简体中文、繁体中文和英文说明。
+- [x] T3.2 在 CHANGELOG 顶部新增独立补丁版本节，不复用历史标题。
+- [x] T3.3 同步 `_worker.js` Version 与 `work-products/tests/chain_proxy.test.mjs` 版本断言。
+- [x] T3.4 全量 `node --test`、语法、CHANGELOG 标题和两仓库差异检查通过。
 
-## Phase 5：生产边界
+## Checkpoint B：交付
 
-- [ ] 用户手动部署。
-- [ ] 收集 Cloudflare CPU/exceededCpu 与真实客户端证据。
-- [ ] 生产证据通过后再标记完整 GO。
+- [ ] B1 SPEC 10 项验收标准逐项通过。
+- [x] B2 变更范围不含自适应、域名识别、KV 自动改写或 Worker 连接逻辑。
+- [x] B3 CGAX-Pages 静态页发布顺序早于 CfGfwAX；实际发布仍由用户控制。
+- [x] B4 未执行的 Cloudflare、Codex、视频和网页真实体验验证明确标记为生产未验证。
+
+## 当前状态
+
+管理页、文档与 v2.4.8 发布合同及本地全量门禁已完成；浏览器客户端拦截本机地址，A1-A4、A6 与 B1 仍待可访问的浏览器环境验证。

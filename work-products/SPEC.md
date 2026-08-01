@@ -1,143 +1,233 @@
-# Spec: SOCKS5/HTTP XHTTP 子 KiB CPU 优化
+# Spec: 连接场景预设与自定义
 
 ## 状态
 
-已执行。用户明确要求按 `@uxu-code:spec → @uxu-code:plan → @uxu-code:build` 连续执行。
+已批准，日期：2026-07-31。
 
-## 实施结论
+用户决策：
 
-- Trojan 首包 SHA-224 惰性单次计算通过功能回归，保留。
-- 子 KiB 三方向基准和公平 Web Streams 对照已建立，保留。
-- 显式 SOCKS5/HTTP XHTTP TCP 原生 `pipeTo` 候选在修正后的稳定公平基准中位数点估计低约 `4.5%`，但处于本地观测波动尺度内，未证明可重复收益且远低于 `50%` 性能门，已从 Worker 回滚。
-- 原始数据与判定见 `work-products/debug/xhttp-native-pipe-no-go.md`。
-- Cloudflare 生产仍未验证；本次不宣称已消除所有 `10 ms` CPU 超限。
+- 批准四个预设的名称、数值和“不单列视频加速”的产品判断；
+- 只制作预设与自定义；
+- 不制作自适应策略，不按应用或域名识别用途；
+- 已完成的 XHTTP 规格归档到 `specs/xhttp-sub-kib-cpu-optimization.completed.md`。
+
+本规格只定义行为与验收标准，不授权在 `@uxu-code:spec` 阶段实现业务代码。
 
 ## 目标
 
-降低 XHTTP 在显式 SOCKS5/HTTP 上游代理、TCP 转发场景中的每块 JavaScript CPU 开销，重点覆盖 `64 B`、`128 B`、`256 B`、`512 B` 小块上传、下载和双向流量；同时消除分片首包阶段对 Trojan SHA-224 的重复计算。
+让 CfGfwAX 管理员无需理解四项底层连接参数，也能根据主要诉求选择保守、可解释的预设，同时继续支持逐项自定义。
 
-本任务不承诺任意请求都能稳定低于 Cloudflare 的 `10 ms` CPU 限额。若改用原生流转发后真实生产流量仍超限，需要由用户选择拆分请求、降低单请求工作量或调整 Cloudflare 套餐。
+目标用户是使用管理页配置代理、但不希望自行试错拨号并发与保活间隔的管理员。
 
-## 已确认事实
+成功意味着：
 
-- 报错请求为 `POST /view/video/.../?ed=2560`，`content-type: application/grpc-web`，Worker 结果为 `exceededCpu`。
-- 样本记录显示 `cpuTimeMs: 10`、`wallTimeMs: 2169`，符合累计 JavaScript 流处理工作触及 CPU 限额，而不是单纯等待上游超时。
-- 用户仅使用 SOCKS5/HTTP 上游代理；不需要为 SSTP、自定义 HTTPS/TLS 代理路径设计本次优化。
-- 当前 XHTTP 上传和下载都由 JavaScript `read()`/`write()` 循环逐块搬运；现有性能基准最小块为 `1 KiB`。
-- Trojan 首包在每次分片重试解析时都会先计算 SHA-224，短于完整首包的分片也会重复付出该成本。
-- 显式 SOCKS5/HTTP 建连成功后均可取得原生 `ReadableStream`/`WritableStream`。
+- 用户能选择场景预设并看到四项明确数值；
+- 用户仍能逐项修改，修改后不会被预设静默覆盖；
+- UI 不把建连优化误称为视频吞吐或整体网速优化；
+- 环境变量覆盖、传输协议适用范围和新连接生效边界均有清晰提示；
+- 不改变 Worker 配置接口、现有默认值或运行逻辑。
 
-## 范围
+## 已确认行为
 
-### 1. 子 KiB 基准
+| 设置 | 默认值 | 实际作用 | 不作用于 |
+| --- | ---: | --- | --- |
+| `PRELOAD_RACE_DIAL` | `false` | 首次直连 TCP 域名时并行 DoH 查询 A/AAAA，再按 TCP 并发上限竞速候选 IP | ProxyIP、显式上游代理、IP 目标、UDP |
+| `TCP_CONCURRENT_DIAL` | `2` | 决定直连 TCP 同时尝试的连接数 | 已建立连接的吞吐、缓冲、分片和保活 |
+| `PROXY_CONCURRENT_DIAL` | `1` | 决定 ProxyIP 地址池每批同时尝试的候选数 | 直连、显式上游代理、已建立连接吞吐 |
+| `KEEPALIVE_INTERVAL` | `30000` | WebSocket 发送空文本帧、gRPC 发送空 protobuf 消息的周期 | XHTTP 定时保活、TCP 拨号、视频吞吐、UDP 目标 |
 
-- 在现有 XHTTP 流基准中加入 `64 B`、`128 B`、`256 B`、`512 B`。
-- 每种大小覆盖上传、下载、双向三类场景。
-- 保留既有 `1 KiB`、`16 KiB`、`64 KiB` 场景、固定负载、预热、原始轮次、摘要、代码指纹和稳定性判断。
-- 新增兼容 JavaScript 泵与目标原生管道的同条件对照，避免把环境波动误判为优化收益。
+补充约束：
 
-### 2. Trojan 首包 SHA-224
+- 环境变量存在时优先于 KV `config.json`，所以管理页保存值可能被覆盖。
+- 修改只影响新建连接；已建立的 WebSocket/gRPC 定时器必须重连后才使用新值。
+- 视频若走 QUIC/UDP，前三项 TCP 设置不会参与目标连接。
+- 竞速只可能改善首连、重连和失败切换，不直接提高持续吞吐。
+- Cloudflare 当前限制每次调用最多六个仍在等待建立或响应头的出站连接；预设并发必须保守低于该上限。平台依据：[Workers Limits](https://developers.cloudflare.com/workers/platform/limits/)。
 
-- 累积数据不足 `58` 字节时不得计算 SHA-224。
-- 达到可解析长度后，在单个 XHTTP 请求闭包内惰性计算一次并复用。
-- 保持现有协议判断顺序、认证比较、`rawData`、错误语义和响应字节不变。
-- 不增加跨请求或全局密码哈希缓存。
+## 预设合同
 
-### 3. SOCKS5/HTTP TCP 原生流转发
+| 稳定 ID | UI 名称 | 预加载竞速 | TCP 并发 | ProxyIP 并发 | 保活间隔 | 适用说明 |
+| --- | --- | ---: | ---: | ---: | ---: | --- |
+| `balanced` | 网页/视频（均衡） | 关 | 2 | 1 | `30000` ms | 与当前默认完全一致；常规浏览和视频使用 |
+| `long_lived` | WS/gRPC 长连接 | 关 | 2 | 1 | `15000` ms | Codex 等存在较长空闲阶段的 WS/gRPC；XHTTP 不受保活值影响 |
+| `weak_network` | 弱网快速建连 | 开 | 3 | 2 | `30000` ms | 域名直连或不稳定 ProxyIP 池；以额外 DoH/socket 换取首连或失败切换机会 |
+| `resource_saver` | 节省连接资源 | 关 | 1 | 1 | `60000` ms | 连接资源优先；容忍更慢的失败切换与更稀疏的 WS/gRPC 活动 |
+| `custom` | 自定义 | 保留 | 保留 | 保留 | 保留 | 高级用户逐项配置 |
 
-仅在以下条件全部满足时启用：
+不提供单独的“视频加速”预设。网页和视频归入均衡场景，并明确四项参数主要影响建连与 WS/gRPC 空闲活动，不控制媒体吞吐。
 
-- 当前请求为 XHTTP；
-- 当前传输为 TCP；
-- 代理类型是显式 `socks5` 或 `http`；
-- 上游代理握手已经成功并返回原生 socket 流。
+## 管理页交互
 
-行为要求：
+- 在“连接竞速与保活”四项设置之前增加带可见 `<label>` 的原生 `<select>`。
+- 选择非 `custom` 项时，一次性把对应四个值写入现有控件，并将 `proxy` 模块标记为已修改。
+- 选择 `custom` 时不得清空、重置或改写任何现有数值。
+- 用户手动修改任一控件后：
+  - 四项值精确匹配某个预设时显示该预设；
+  - 否则显示“自定义”。
+- 加载配置、取消修改和保存后刷新时，均根据四项值重新推断预设。
+- 预设说明紧邻下拉框显示并随选择更新，不得只依赖 `title`。
+- 固定显示以下限制：
+  - 环境变量存在时优先，可能覆盖此处保存值；
+  - 设置只影响新建连接，现有长连接需重连；
+  - 竞速主要影响建连与失败切换，不直接提高视频吞吐；
+  - WS/gRPC 长连接预设的保活值不作用于 XHTTP。
+- 复用现有布局、颜色、间距和表单风格，不新增卡片、弹窗、依赖或视觉主题。
+- 320、768、1024、1440 px 宽度下无横向溢出；下拉框和数字输入可用键盘操作且有可读标签。
 
-- 首包中的 `rawData` 仍且仅写入上游一次。
-- 释放首包读取器后，剩余请求体使用 `request.body.pipeTo(remoteSocket.writable)`。
-- 下行使用 `remoteSocket.readable.pipeTo(responseWritable)`。
-- VLESS 的两字节响应头只写一次，然后再转交原生管道；Trojan 不添加该头。
-- 使用原生 Streams 背压，不引入定时批处理或固定最小读取长度。
-- 上传 EOF 正常关闭上游 writable。
-- 请求取消、响应取消或任一方向报错时关闭 socket，并终止另一方向，不能遗留锁或悬挂 Promise。
-- 其他路径继续使用现有队列和 JavaScript 泵，包括 UDP、直连、SSTP、自定义 HTTPS/TLS、WebSocket、gRPC、XMUX 及兼容回退。
+## 配置与接口合同
 
-## 接口与兼容性
+继续通过既有 `POST /admin/config.json` 保存：
 
-- 不修改公开 URL、查询参数、鉴权、订阅格式、状态码或响应头。
-- 不改变代理选择和回退规则。
-- 不改变 TCP 字节内容与顺序。
-- 内部 XHTTP bridge 可增加可选的 readable/writable 能力，但现有 `send`/`close` 语义须保留给 UDP 和兼容路径。
-- 不新增配置项，不改变默认设置。
+```json
+{
+  "连接设置": {
+    "预加载竞速拨号": false,
+    "TCP并发拨号数": 2,
+    "反代并发拨号数": 1,
+    "连接保活间隔毫秒": 30000
+  }
+}
+```
+
+- 不保存预设 ID；预设只是现有四项数值的可逆 UI 映射。
+- 不改变 `GET /admin/config.json`、`POST /admin/config.json` 的形状、状态码和鉴权。
+- 不改变环境变量优先级、Worker 默认值或中国移动在未显式配置时降为单路的现有行为。
+- 不修改 `../_worker.js` 的连接运行逻辑。
+
+## 范围与项目结构
+
+实施阶段允许修改：
+
+- `../../CGAX-Pages/admin/index.html`
+  - 下拉框、说明、预设常量、填充/匹配逻辑及现有保存联动。
+- `../../CGAX-Pages/work-products/tests/connection-settings.test.mjs`
+  - 从测试最终位置以 `../../admin/index.html` 引用产品文件；
+  - 增加映射、加载匹配、手动转自定义、选择自定义不改值及说明文字回归。
+- `../README.md`
+  - 简体中文、繁体中文、英文同步说明预设、环境变量优先和适用边界。
+- `../CHANGELOG`
+  - 按仓库发布规则记录实际交付，不提前声称功能已实施。
+
+实施阶段不得修改：
+
+- `../_worker.js` 的拨号、回退、保活、流式转发或协议实现；
+- `/admin/config.json` 配置形状；
+- `login/`、`noADMIN/`、`noKV/` 静态路径；
+- vendor/data 固定资源；
+- 与本功能无关的代码或格式。
+
+## 代码风格
+
+- `CGAX-Pages` 继续使用单文件 HTML/CSS/JavaScript，不为单次映射增加抽象层或依赖。
+- 预设使用一个不可变普通对象；填充、读取和匹配逻辑保持小函数化。
+- 沿用页面现有缩进、分号、命名和事件处理方式。
+
+示意合同：
+
+```javascript
+const connectionProfiles = Object.freeze({
+	balanced: { preloadRaceDial: false, tcpConcurrentDial: 2, proxyConcurrentDial: 1, keepaliveInterval: 30000 },
+	long_lived: { preloadRaceDial: false, tcpConcurrentDial: 2, proxyConcurrentDial: 1, keepaliveInterval: 15000 },
+	weak_network: { preloadRaceDial: true, tcpConcurrentDial: 3, proxyConcurrentDial: 2, keepaliveInterval: 30000 },
+	resource_saver: { preloadRaceDial: false, tcpConcurrentDial: 1, proxyConcurrentDial: 1, keepaliveInterval: 60000 },
+});
+```
 
 ## 非目标
 
-- 不修改 WebSocket、gRPC 或 XMUX 实现。
-- 不优化 SOCKS5/HTTP 握手算法本身。
-- 不引入计时器聚合、`readAtLeast()` 或应用层分块协议。
-- 不执行 Wrangler 部署，不宣称本地 Node 结果等同 Cloudflare 生产证明。
-- 不处理与本任务无关的既有代码、格式或 CHANGELOG 改动。
+- 不制作自适应策略或“自动模式”。
+- 不按 Codex、YouTube、Instagram 等应用名称或域名识别用途。
+- 不解析、记录或分类应用层敏感载荷。
+- 不自动改写 KV。
+- 不增加 Worker 配置字段、后端接口或业务逻辑。
+- 不限制或重新定义用户现有自定义最小值。
+- 不承诺消除所有断流、提高视频码率或提升所有网络的页面加载速度。
+- 不运行 Wrangler 或执行 Cloudflare 部署。
 
 ## 风险与控制
 
-- **半关闭语义变化**：原生 `pipeTo()` 默认关闭目标。通过针对 EOF、取消、单向错误的回归测试确认符合当前 XHTTP 生命周期。
-- **双向错误竞态**：集中 socket 关闭并容忍重复关闭；测试两方向失败不会产生未处理拒绝。
-- **响应头重复或丢失**：精确断言 VLESS/Trojan 首字节序列。
-- **适用范围扩大**：测试显式代理命中原生路径，非目标传输仍命中兼容路径。
-- **基准噪声**：保留校准、原始轮次和 CV 阈值；不以单轮结果作结论。
+- **误导性性能承诺**：说明文字区分建连、保活和吞吐，不使用“视频加速”。
+- **自定义值丢失**：选择 `custom` 不写值；任何未知组合稳定显示 `custom`。
+- **保存兼容性**：不持久化预设 ID，只保存现有四项字段。
+- **环境变量覆盖**：管理页明确提示，不伪装为当前运行有效值。
+- **布局回归**：复用 `.connection-settings` 范围样式并保留 checkbox 固定宽度回归。
+- **预设数值未经普适生产证明**：把它们定义为保守起点，不表述为全局最优。
 
-## 测试设计
+## 测试策略
 
-新增：
+扩展既有 `../../CGAX-Pages/work-products/tests/connection-settings.test.mjs`，覆盖：
 
-- `work-products/tests/xhttp_stream_tiny_chunks.test.mjs`
-- `work-products/tests/xhttp_first_packet_fragmentation.test.mjs`
+- 五个下拉选项和四个精确映射；
+- 默认配置推断 `balanced`；
+- 每个非默认预设填充正确值；
+- 任一非预设组合显示 `custom`；
+- 选择 `custom` 不改变当前值；
+- 加载、取消修改和保存后刷新重新推断；
+- 环境变量、仅新连接生效、吞吐边界和 XHTTP 限制文字存在；
+- checkbox 固定宽度回归继续保留。
 
-RED 证据：
+仓库验证命令：
 
-1. 现有基准没有子 KiB profile。
-2. 当前 Trojan 分片首包在一次请求内会多次执行 SHA-224。
-3. 当前显式 SOCKS5/HTTP TCP 仍通过逐块 JavaScript 泵，而不是原生 `pipeTo()`。
+```powershell
+# CGAX-Pages
+node --test work-products/tests/connection-settings.test.mjs work-products/tests/frontend-performance.test.mjs
+git -c safe.directory='C:/Users/brand/SynologyDrive/Code/CGAX-Pages' diff --check
 
-回归覆盖：
+# CfGfwAX
+node --test
+node --check _worker.js
+git -c safe.directory='C:/Users/brand/SynologyDrive/Code/CfGfwAX' diff --check
+```
 
-- `64 B`、`128 B`、`256 B`、`512 B` 三类流向均可执行并输出稳定性数据。
-- Trojan 首包被拆成多个小分片时，SHA-224 每请求最多一次。
-- SOCKS5 与 HTTP、VLESS 与 Trojan 的上传/下载字节及顺序正确。
-- VLESS 响应头一次，Trojan 无响应头。
-- EOF、取消、上传错误、下载错误均能收敛，不挂起、不重复写首包。
-- 非目标路径保持使用兼容泵。
-- 既有全部 Node 回归继续通过。
+手工 UI 验证：
 
-## 可量化验收标准
+- 依次选择四个预设，值与说明同步变化；
+- 修改任一值后显示“自定义”，改回精确组合后恢复预设名称；
+- 选择“自定义”不改变值；
+- 保存、刷新和取消修改后推断正确；
+- 键盘可聚焦、展开、选择和保存；
+- 320、768、1024、1440 px 下检查换行、控件尺寸和横向溢出。
 
-- 功能：
-  - 目标路径字节、顺序、协议头、状态码和响应头与现有行为一致。
-  - Trojan SHA-224 每个请求最多计算一次，且不足 `58` 字节时不计算。
-  - 所有 EOF、取消和错误测试在有限超时内完成，无未处理拒绝和 stream lock 泄漏。
-- 性能：
-  - 子 KiB profile 的基准 CPU 变异系数 `CV ≤ 10%` 才可用于结论。
-  - 子 KiB 双向场景中，原生管道 CPU 中位数相对兼容 JavaScript 泵至少下降 `50%`。
-  - 既有 `1 KiB`、`16 KiB`、`64 KiB` 场景的中位数不得回退超过 `5%`。
-- 验证：
-  - `node --test`
-  - `node --check _worker.js`
-  - `git diff --check`
-  - 记录修改前后基准原始数据与代码指纹。
+## 验收标准
 
-## 交付边界
+1. 第一阶段只改现有配置的表示层，四项保存值与接口完全兼容。
+2. 下拉框包含已批准的五项及精确数值映射。
+3. 默认、保存后刷新和取消修改均稳定推断 `balanced`。
+4. 任一非预设组合显示 `custom`，用户数值不丢失。
+5. UI 明确环境变量优先、仅新连接生效、XHTTP 不使用保活定时器、竞速不等于吞吐提升。
+6. 测试位于 `CGAX-Pages/work-products/tests/`，并从最终位置以相对路径引用产品文件。
+7. 两仓库回归、语法检查和 `git diff --check` 通过。
+8. 简体中文、繁体中文、英文说明语义同步。
+9. 不实现自适应、自动应用识别、KV 自动改写或 Worker 运行逻辑变更。
+10. 本地证据不表述为 Cloudflare、Codex 或视频播放的生产证明。
 
-- 本地代码、回归测试和稳定基准通过后，任务可报告为“本地实现完成”。
-- Cloudflare 部署和真实客户端流式验证由用户控制；未执行前必须明确标为“生产未验证”。
-- CHANGELOG 只在顶部新增本任务条目；保留用户当前未提交的历史条目删除，不恢复、不覆盖。
+## 边界
 
-## 回滚
+### 始终执行
 
-- 原生管道由严格的显式代理条件保护；回滚时可删除该分支并恢复现有 XHTTP bridge。
-- SHA-224 优化可独立回滚为当前解析逻辑。
-- 基准与回归测试应保留，用于证明回滚后的行为与性能差异。
+- 保留自定义值；
+- 复用现有接口和 UI 风格；
+- 在表单边界验证整数和最小值；
+- 区分仓库验证与生产效果；
+- 保持三语文档同步；
+- 按仓库规则更新版本、版本断言和 `CHANGELOG`。
+
+### 先询问
+
+- 调整任何已批准的预设名称或数值；
+- 给自定义并发增加最大值或改变现有最小值；
+- 修改 Worker 运行逻辑或配置 API；
+- 增加依赖或改变发布流程。
+
+### 永不执行
+
+- 制作自适应策略或应用域名识别；
+- 把预设宣传为视频吞吐加速；
+- 自动改写 KV；
+- 记录目标域名、路径、凭据或原始数据；
+- 将本地测试冒充生产验证；
+- 执行 Wrangler 直接部署。
 
 ## 开放问题
 
-无。目标代理类型、适用路径、兼容边界、验证标准和生产责任边界均已明确。
+无。预设名称、数值、交互范围、接口兼容性、非目标和验证边界均已批准。

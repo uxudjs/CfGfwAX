@@ -58,6 +58,18 @@
 
 > 管理页“Cloudflare CDN 访问设置”中的连接竞速与保活项会保存到 KV `config.json`，用作这些变量未设置时的回退值；环境变量存在时仍优先。
 
+#### 连接场景预设
+
+| 场景 | 预加载竞速 | TCP 并发 | ProxyIP 并发 | 保活间隔 |
+| :--- | :---: | ---: | ---: | ---: |
+| 网页/视频（均衡） | 关 | 2 | 1 | 30000 ms |
+| WS/gRPC 长连接 | 关 | 2 | 1 | 15000 ms |
+| 弱网快速建连 | 开 | 3 | 2 | 30000 ms |
+| 节省连接资源 | 关 | 1 | 1 | 60000 ms |
+| 自定义 | 保留当前值 | 自定义 | 自定义 | 自定义 |
+
+预设只填充现有四项设置，不保存额外的场景 ID；手动修改后会精确匹配预设，否则显示“自定义”。设置只影响新建连接，现有长连接需重连；保活间隔用于 WebSocket/gRPC 而不作用于 XHTTP，竞速主要改善建连与失败切换，不直接提高视频吞吐。
+
 ### 动态代理路径
 
 ```text
@@ -125,6 +137,18 @@
 
 > 管理頁「Cloudflare CDN 存取設定」中的連線競速與保活項會儲存到 KV `config.json`，作為這些變數未設定時的回退值；環境變數存在時仍優先。
 
+#### 連線場景預設
+
+| 場景 | 預載競速 | TCP 並行 | ProxyIP 並行 | 保活間隔 |
+| :--- | :---: | ---: | ---: | ---: |
+| 網頁/影片（均衡） | 關 | 2 | 1 | 30000 ms |
+| WS/gRPC 長連線 | 關 | 2 | 1 | 15000 ms |
+| 弱網快速連線 | 開 | 3 | 2 | 30000 ms |
+| 節省連線資源 | 關 | 1 | 1 | 60000 ms |
+| 自訂 | 保留目前值 | 自訂 | 自訂 | 自訂 |
+
+預設只會填入既有四項設定，不會儲存額外的場景 ID；手動修改後會精確比對預設，否則顯示「自訂」。設定只影響新建連線，現有長連線需重新連線；保活間隔用於 WebSocket/gRPC 而不作用於 XHTTP，競速主要改善連線建立與失敗切換，不會直接提高影片吞吐量。
+
 ### 動態代理路徑
 
 ```text
@@ -191,6 +215,18 @@ Visit `https://your-domain/admin` and sign in with the `ADMIN` password. You can
 | `KEEPALIVE_INTERVAL` | ❌ | `30000` | Connection keepalive interval in milliseconds (minimum `1000`) |
 
 > The connection-racing and keepalive settings in the **Cloudflare CDN Access Settings** admin section are saved in KV `config.json` as fallbacks when these variables are unset. Environment variables continue to take precedence.
+
+#### Connection profiles
+
+| Profile | Preloaded racing | TCP concurrency | ProxyIP concurrency | Keepalive interval |
+| :--- | :---: | ---: | ---: | ---: |
+| Web/video (balanced) | Off | 2 | 1 | 30000 ms |
+| WS/gRPC long-lived | Off | 2 | 1 | 15000 ms |
+| Faster weak-network setup | On | 3 | 2 | 30000 ms |
+| Connection resource saver | Off | 1 | 1 | 60000 ms |
+| Custom | Keep current value | Custom | Custom | Custom |
+
+Profiles only fill the existing four settings and do not persist a separate profile ID. Manual edits are matched exactly to a profile; unmatched values remain **Custom**. Changes affect new connections only, so existing long-lived connections must reconnect. Keepalive applies to WebSocket/gRPC, not XHTTP, while racing targets connection setup and failover rather than sustained video throughput.
 
 ### Dynamic proxy paths
 

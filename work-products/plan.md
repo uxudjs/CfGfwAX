@@ -1,150 +1,227 @@
-# Implementation Plan: SOCKS5/HTTP XHTTP 子 KiB CPU 优化
+# Implementation Plan: 连接场景预设与自定义
+
+## 规划依据
+
+依据已批准的 `work-products/SPEC.md`。规格已经明确目标用户、五个选项、四组精确数值、交互行为、配置兼容、非目标、测试策略和验收标准，开放问题为零，足以进入实施计划。
+
+本计划不授权自适应策略、应用域名识别、KV 自动改写、Worker 连接逻辑变更或 Cloudflare 部署。
 
 ## 目标与边界
 
-依据 `work-products/SPEC.md`，仅优化 XHTTP TCP 经显式 SOCKS5/HTTP 代理的流转发，并修复 Trojan 分片首包的重复 SHA-224。保持协议字节、公开接口、代理选择、非目标传输和默认设置不变；Cloudflare 部署及生产验证由用户执行。
+在 `../../CGAX-Pages/admin/index.html` 的“连接竞速与保活”区域增加场景下拉框，使用户能把已批准预设填入现有四项设置，并在手动修改时可靠切换为“自定义”。继续保存现有 `连接设置` 四字段，不持久化预设 ID，不改变 Worker API、默认值或运行行为。
 
-## 依赖顺序
+## 关键决策
+
+- **UI 映射而非新配置字段**：预设 ID 不进入 KV，避免前后端协议和迁移成本。
+- **精确匹配而非近似匹配**：四项值完全相等才显示预设，其他组合均为 `custom`。
+- **单文件实现**：沿用 CGAX-Pages 的自包含 HTML/CSS/JavaScript，不增加依赖或抽象层。
+- **既有测试扩展**：只扩展 `../../CGAX-Pages/work-products/tests/connection-settings.test.mjs`；该测试继续从最终位置以 `../../admin/index.html` 引用产品文件。
+- **静态合同 + 手工交互**：Node 回归覆盖源码合同，浏览器检查覆盖 DOM 状态、键盘操作、响应式和控制台。
+- **顺序实施**：测试、UI、文档/发布共享同一合同，不并行修改。
+
+## 依赖图
 
 ```text
-子 KiB 与分片 RED
-  → Trojan SHA 惰性单次计算
-    → SOCKS5/HTTP 原生 pipeTo 双向转发
-      → 稳定 A/B、全量回归与 CHANGELOG
+已批准 SPEC
+  → Task 1：连接预设 RED 合同
+    → Task 2：管理页完整交互
+      → Checkpoint A：前端功能与视觉
+        → Task 3：三语文档与发布同步
+          → Checkpoint B：两仓库最终验收
 ```
 
-## Task 1：建立失败证据与子 KiB 测量面（完成）
+## Task 1：建立连接预设前端 RED 合同
+
+**描述**
+
+扩展现有管理页源码回归，先证明五个选项、精确映射、推断/填充入口、限制说明和自定义保值行为尚未实现。不得修改 `admin/index.html`。
+
+**范围**
+
+- 修改 `../../CGAX-Pages/work-products/tests/connection-settings.test.mjs`。
+- 保留现有四项控件、最小值、checkbox 宽度和保存合同断言。
+- 新增断言覆盖：
+  - `balanced`、`long_lived`、`weak_network`、`resource_saver`、`custom` 五项；
+  - 四个预设的精确数值；
+  - 选择预设、读取当前值、精确推断和手动修改同步入口；
+  - `custom` 分支不写四项值；
+  - 环境变量优先、仅新连接生效、吞吐边界和 XHTTP 限制说明。
+
+**验收标准**
+
+- [ ] 新断言在现有页面上失败，且失败原因只指向预设功能缺失。
+- [ ] 既有三组连接设置断言仍通过。
+- [ ] 测试仍使用 `new URL('../../admin/index.html', import.meta.url)`，不出现机器绝对路径。
+
+**验证**
+
+从 `CGAX-Pages` 运行：
+
+```powershell
+node --test work-products/tests/connection-settings.test.mjs
+```
+
+预期：新增断言 RED，既有断言不回退。保存完整失败输出作为本任务 RED 证据。
 
 **依赖**：无。
 
-**范围**
+**可能修改文件**
 
-- 修改 `work-products/benchmarks/xhttp_stream_benchmark.mjs`，加入 `64b/128b/256b/512b` 的上传、下载和双向 profile，并保留既有 profile 与 schema。
-- 新增 `work-products/tests/xhttp_stream_tiny_chunks.test.mjs`，证明 profile、字节摘要、兼容泵和原生管道对照均可执行。
-- 新增 `work-products/tests/xhttp_first_packet_fragmentation.test.mjs`，通过受控 SHA 观察器证明当前分片解析重复计算，并证明不足 58 字节时不应计算。
+- `../../CGAX-Pages/work-products/tests/connection-settings.test.mjs`
 
-**验收**
-
-- RED 明确失败于目标行为缺失，而非夹具、路径或语法错误。
-- 新 profile 沿用固定种子、CPU 原始轮次、代码指纹和 `CV ≤ 10%` 稳定门。
-- 测试引用仓库文件时只使用相对路径。
-
-**验证**
-
-- `node --test work-products/tests/xhttp_stream_tiny_chunks.test.mjs work-products/tests/xhttp_first_packet_fragmentation.test.mjs`
-- `node --check work-products/benchmarks/xhttp_stream_benchmark.mjs`
+**规模**：S，1 个文件。
 
 **回滚**
 
-- 只回退基准 profile 和两个新测试；不触碰 Worker。
+只移除本任务新增断言，恢复原测试文件；不触碰产品页面。
 
-## Task 2：Trojan 首包 SHA-224 惰性单次计算（完成）
+## Task 2：实现管理页预设与自定义完整交互
 
-**依赖**：Task 1 的分片 RED。
+**描述**
 
-**范围**
-
-- 在 `_worker.js` 的单次 `读取XHTTP首包()` 闭包内缓存编码后的密码哈希。
-- 累积数据不足 58 字节时先返回 `need_more`，不得执行 SHA-224。
-- 保持认证、地址解析、`rawData`、错误文本和 VLESS 判定顺序不变。
-
-**验收**
-
-- Trojan 首包任意分片数量下每请求最多计算一次 SHA-224。
-- 完整首包与未授权首包行为保持不变。
-
-**验证**
-
-- `node --test work-products/tests/xhttp_first_packet_fragmentation.test.mjs`
-- 运行既有 XHTTP/Trojan 首包相关回归。
-- `node --check _worker.js`
-
-**回滚**
-
-- 仅恢复 `读取XHTTP首包()` 的当前哈希计算位置；测试保留用于记录成本差异。
-
-## Task 3：显式 SOCKS5/HTTP TCP 原生双向管道（NO-GO，已回滚）
-
-**依赖**：Task 2。
+在现有“连接竞速与保活”区域加入下拉框和紧邻说明，使用一个不可变预设对象及小型读、写、推断函数打通加载、选择、手动编辑、取消修改和保存后刷新。
 
 **范围**
 
-- 在 `_worker.js` 为目标条件增加内部原生流能力：首包仍由代理握手函数写一次，剩余 request body 与远端 writable 直接 `pipeTo()`。
-- 远端 readable 直接 `pipeTo()` XHTTP 响应 writable；VLESS 两字节响应头在移交管道前写一次，Trojan 不写。
-- 统一 EOF、取消和任一方向错误的 socket 收敛；重复关闭保持无害。
-- 非目标路径继续使用 `connectXHTTPStreams()`/`connectStreams()` 兼容泵。
-- 扩充 `work-products/tests/xhttp_stream_tiny_chunks.test.mjs`，覆盖 SOCKS5/HTTP、VLESS/Trojan、字节顺序、header-once、EOF、取消、双向错误和非目标回退。
+- 修改 `../../CGAX-Pages/admin/index.html`。
+- 在四项控件前增加带可见 `<label>` 的原生 `<select>` 及说明区域。
+- 实现以下最小职责：
+  - 读取当前四项表单值；
+  - 用精确四字段匹配推断预设或 `custom`；
+  - 选择非 `custom` 时填入四项值并调用 `markModified('proxy')`；
+  - 选择 `custom` 时只更新选择状态，不写入四项控件；
+  - 手动修改任一现有控件时重新推断并标记修改；
+  - `applyProxyConfigToForm()` 回填四项后同步推断选择状态。
+- 固定显示四条限制说明：环境变量优先、仅新连接生效、竞速不等于视频吞吐、XHTTP 不使用该保活定时器。
+- 保留现有整数/最小值校验、`currentConfig.连接设置` 形状及 checkbox 固定宽度。
 
-**验收**
+**验收标准**
 
-- 目标条件严格命中原生 `pipeTo()`；其他出站或入站不命中。
-- 首包、剩余上传、下载均无丢失、重复或乱序。
-- 资源生命周期测试在有限超时内完成，无未处理拒绝或 stream lock 泄漏。
+- [ ] 四个预设分别填入 SPEC 中的精确值。
+- [ ] `custom` 不修改现值；非预设组合显示 `custom`；改回精确组合恢复对应预设。
+- [ ] 加载、取消修改和保存后刷新均根据四项值推断，不持久化预设 ID。
+- [ ] 既有保存、校验、ProxyIP 和显式代理设置不受影响。
+- [ ] 页面无新增依赖、弹窗、卡片或 Worker API 调用。
 
 **验证**
 
-- `node --test work-products/tests/xhttp_stream_tiny_chunks.test.mjs`
-- 运行既有 `xhttp_stream*`、`chain_proxy`、transport diagnostics 回归。
-- `node --check _worker.js`
+从 `CGAX-Pages` 运行：
+
+```powershell
+node --test work-products/tests/connection-settings.test.mjs work-products/tests/frontend-performance.test.mjs
+git -c safe.directory='C:/Users/brand/SynologyDrive/Code/CGAX-Pages' diff --check
+```
+
+**依赖**：Task 1。
+
+**可能修改文件**
+
+- `../../CGAX-Pages/admin/index.html`
+
+**规模**：S，1 个文件。
 
 **回滚**
 
-- 删除严格条件保护的原生管道分支，恢复既有兼容泵；Task 2 可独立保留。
+移除预设 markup、常量与辅助函数；恢复四项控件原 `onchange="markModified('proxy')"`，保持既有四字段保存逻辑。
 
-**实际结果**
+## Checkpoint A：前端功能与视觉
 
-- 功能候选与 SOCKS5/HTTP 集成测试曾通过。
-- 初版双向 native 夹具误加两条空管道，审查后已修正为一次 helper 承载两条真实 `pipeTo`，并增加调用计数回归。
-- 修正后的 `bidirectional-64b` 基准中，手动 Web Streams 泵为 `44.234043 ms`，原生 `pipeTo` 为 `42.255319 ms`；两组 CPU CV 均小于 `10%`。
-- 原生方案中位数点估计低约 `4.5%`，但处于本地观测波动尺度内，未证明可重复收益且远低于 `50%` 门槛，因此仍按本任务回滚条款不进入 `_worker.js`。
+- [ ] Task 1 的 RED 已转为 GREEN，原有连接设置与前端性能回归通过。
+- [ ] 使用 `python -m http.server 8000 --directory ../CGAX-Pages` 预览 `/admin/`。
+- [ ] 依次选择四个预设并核对值、说明、修改状态和 `custom` 保值行为。
+- [ ] 保存、刷新、取消修改后推断一致。
+- [ ] 键盘可聚焦、展开、选择和保存；控制台无新增错误。
+- [ ] 在 320、768、1024、1440 px 检查换行、控件尺寸和横向溢出。
+- [ ] 烟测 `/login/`、`/noADMIN/`、`/noKV/`，确认静态路径未受影响。
+- [ ] 为 PR 保留管理页桌面与移动端前后对比截图；过程截图只放在 `../../CGAX-Pages/work-products/debug/`。
 
-## Task 4：性能门、全量回归与交付记录（完成）
+未通过 Checkpoint A 不得进入文档和发布同步。
 
-**依赖**：Task 3。
+## Task 3：同步三语文档与跨仓库发布合同
+
+**描述**
+
+在前端行为通过后，更新 CfGfwAX 三语说明与发布元数据。文档只描述已实际实现的预设 UI，不宣称视频吞吐加速、自动识别或生产效果。
 
 **范围**
 
-- 使用相同 fixture、Node、代码指纹分别测量兼容泵与原生管道，保存原始证据到 `work-products/debug/`。
-- 运行完整 Node、Worker 语法和 Git 差异检查。
-- 在 `CHANGELOG` 顶部追加本任务条目，保留用户已有未提交删除，不改写历史版本标题。
-- 更新 `work-products/todo.md` 的实际状态与门禁结论。
+- 修改 `README.md` 的简体中文、繁体中文和英文连接设置段落，保持三种语言语义一致。
+- 按实际当前版本执行下一语义化补丁发布：
+  - 在 `CHANGELOG` 顶部新增独立版本节，仅使用允许的 `### ADD` 或 `### Change`；
+  - 更新 `_worker.js` 的 `const Version`；
+  - 更新 `work-products/tests/chain_proxy.test.mjs` 的版本断言。
+- CHANGELOG 明确：新增场景预设与自定义、现有四字段/API 不变、不包含自动模式。
+- 保留所有既有发布节和用户未提交变更，不复用历史版本标题。
 
-**验收**
+**验收标准**
 
-- 可用于结论的子 KiB profile 均 `CPU CV ≤ 10%`。
-- 子 KiB 双向原生管道 CPU 中位数相对兼容泵下降至少 50%。
-- 既有 1/16/64 KiB profile 无超过 5% 回退。
-- `node --test`、`node --check _worker.js`、`git diff --check` 全部通过。
-- 本地通过只标记“等待用户生产验证”。
+- [ ] 三语说明覆盖五项选择、环境变量优先、仅新连接生效、XHTTP 限制和非吞吐承诺。
+- [ ] Worker、CHANGELOG 顶部和版本断言完全一致，且为实际当前版本的下一补丁版本。
+- [ ] CHANGELOG 只使用管理页允许的三级标题，旧版本节原文不变。
+- [ ] 未增加 Worker 运行逻辑、配置字段或部署命令。
 
 **验证**
 
-- `node --expose-gc work-products/benchmarks/xhttp_stream_benchmark.mjs ...`
-- `node --test`
-- `node --check _worker.js`
-- `git diff --check`
-- `git status --short`
+从 `CfGfwAX` 运行：
+
+```powershell
+node --test
+node --check _worker.js
+node --test work-products/tests/changelog_headings.test.mjs
+git -c safe.directory='C:/Users/brand/SynologyDrive/Code/CfGfwAX' diff --check
+```
+
+从 `CGAX-Pages` 重跑：
+
+```powershell
+node --test work-products/tests/connection-settings.test.mjs work-products/tests/frontend-performance.test.mjs
+git -c safe.directory='C:/Users/brand/SynologyDrive/Code/CGAX-Pages' diff --check
+```
+
+**依赖**：Task 2 与 Checkpoint A。
+
+**可能修改文件**
+
+- `README.md`
+- `CHANGELOG`
+- `_worker.js`
+- `work-products/tests/chain_proxy.test.mjs`
+
+**规模**：M，4 个文件。
 
 **回滚**
 
-- 性能门未通过则回退 Task 3，保留测试、基准与 NO-GO 证据；功能门未通过则停止，不更新完成状态。
+将本任务新增的顶部发布节、版本值、版本断言和三语段落作为一个发布元数据补丁回退；不得改写更早版本节。
 
-**实际结果**
+## Checkpoint B：最终验收
 
-- Task 3 性能门未通过并已回滚。
-- 保留子 KiB/fair A/B 基准与 `work-products/debug/xhttp-native-pipe-no-go.md`。
-- NO-GO 报告与两份公平原始 JSON 已通过精确 `.gitignore` 例外纳入交付范围。
-- `node --test --test-reporter=dot`、`node --check _worker.js`、`git diff --check` 均通过，CHANGELOG 已更新。
+- [ ] SPEC 的 10 项验收标准逐项有证据。
+- [ ] 两仓库目标测试、全量 Node 回归、语法和差异检查全部通过。
+- [ ] 管理页桌面/移动端视觉及键盘交互通过，无新增控制台错误。
+- [ ] Worker、CHANGELOG 和版本断言一致。
+- [ ] 变更集仅包含本功能、计划发布元数据及实施前已有用户基线。
+- [ ] CGAX-Pages 应先发布静态管理页；CfGfwAX 后续发布只同步版本与文档，不新增 Worker API。
+- [ ] Cloudflare/GitHub Pages 发布和真实 Codex、视频、网页体验验证仍由用户控制，未执行时标记为生产未验证。
 
-## 计划自审
+## 风险与缓解
 
-- [x] 每项任务均有依赖、范围、验收、验证和回滚。
-- [x] 先 RED 后实现；SHA 与原生流可独立回滚。
-- [x] 每个实现任务涉及不超过 5 个文件。
-- [x] 未改变外部协议、默认设置、非目标传输或部署权限边界。
-- [x] 性能改善必须同时满足正确性、稳定性和无回退门。
-- [x] 无材料问题或未决设计选择阻止实施。
+| 风险 | 影响 | 缓解 |
+| --- | --- | --- |
+| 预设覆盖自定义值 | 高 | `custom` 分支禁止写值；未知组合精确归类为 `custom` |
+| 页面显示预设但 KV 值不一致 | 高 | 不保存预设 ID；显示状态始终由四项实际表单值推断 |
+| 环境变量让管理页值未实际生效 | 中 | 固定显示环境变量优先提示，不声称显示运行有效值 |
+| 新事件处理破坏修改/取消流程 | 中 | 复用 `markModified('proxy')` 和 `applyProxyConfigToForm()`，覆盖加载与取消检查 |
+| 单文件页面布局回归 | 中 | 复用现有表单样式，保留 checkbox 回归，并做四断点视觉检查 |
+| 文档夸大性能 | 中 | 明确只影响建连/保活，不承诺吞吐、断流或生产收益 |
+| 两仓库发布错序 | 低 | 先发布 CGAX-Pages 静态页，再同步 CfGfwAX 发布元数据 |
 
-## 决策
+## 上下文加载约定
 
-计划无误，可按用户授权直接进入 `@uxu-code:build`。
+- Task 1 只加载 SPEC 的预设、交互、测试段和现有 `connection-settings.test.mjs`。
+- Task 2 只加载 Task 1 RED、`admin/index.html` 的连接设置 markup、`applyProxyConfigToForm()`、保存逻辑及相邻 select 模式。
+- Task 3 只加载已验证 UI 行为、README 三语连接设置段、CHANGELOG 顶部和版本合同。
+- 任一任务发现规格外接口、数值或范围决策时停止，不自行扩展。
+
+## 开放问题
+
+无。计划不引入新的产品或架构决策。

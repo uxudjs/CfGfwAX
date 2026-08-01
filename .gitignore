@@ -62,6 +62,8 @@ log/
 !/work-products/SPEC.md
 !/work-products/plan.md
 !/work-products/todo.md
+!/work-products/specs/
+!/work-products/specs/**
 !/work-products/tests/
 !/work-products/tests/**
 !/work-products/benchmarks/
