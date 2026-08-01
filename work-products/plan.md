@@ -1,57 +1,81 @@
-# Implementation Plan: 连接场景预设与自定义
+# Implementation Plan: 连接场景紧凑交互修订
+
+## 状态
+
+实施与审查修复完成。Task 1 至 Task 3、焦点约束调试及 Checkpoint B 的逻辑、文档和本地发布合同均已通过；用户于 2026-08-01 明确排除浏览器预览并接受逻辑验证，因此 Checkpoint A 的视觉、真实键盘、四断点、控制台与截图项目未执行，但不阻塞本轮交付，且仍保持“未验证”边界。
 
 ## 规划依据
 
-依据已批准的 `work-products/SPEC.md`。规格已经明确目标用户、五个选项、四组精确数值、交互行为、配置兼容、非目标、测试策略和验收标准，开放问题为零，足以进入实施计划。
-
-本计划不授权自适应策略、应用域名识别、KV 自动改写、Worker 连接逻辑变更或 Cloudflare 部署。
+- 用户本轮显式调用 `@uxu-code:plan`，授权把当前 `work-products/SPEC.md` 的 2026-08-01 交互修订草案转换为实施计划；这不等于授权执行计划。
+- 修订规格已明确目标、范围、交互状态、配置兼容、可访问性、测试策略、13 项验收标准、非目标和回滚边界，且没有材料性开放问题，足以规划，无需另建规格。
+- 当前实现基线已经核对：
+  - `../../CGAX-Pages/admin/index.html` 已有五个场景和四组精确映射；
+  - `connectionProfileDescription` 与 `connectionProfileNotes` 常驻主表单；
+  - 四项底层控件始终显示；
+  - `handleConnectionSettingChange()` 会立即调用 `syncConnectionProfileSelection()`；
+  - `saveProxy()` 保存后也会重新推断，无法保留显式 `custom` 会话状态；
+  - UUID 的 `.label-with-hint`、`.inline-hint-btn` 和通用模态框样式可复用，但连接说明必须使用独立模态框和独立焦点/关闭逻辑。
+- 当前发布基线为 v2.4.9。实施时若基线未变化，下一补丁版本为 v2.4.10；若期间已有新版本，必须重新读取并选择新的下一补丁版本，不能复用旧标题。
 
 ## 目标与边界
 
-在 `../../CGAX-Pages/admin/index.html` 的“连接竞速与保活”区域增加场景下拉框，使用户能把已批准预设填入现有四项设置，并在手动修改时可靠切换为“自定义”。继续保存现有 `连接设置` 四字段，不持久化预设 ID，不改变 Worker API、默认值或运行行为。
+把管理页“连接竞速与保活”收敛为紧凑、可逆的表示层交互：预设模式只显示“使用场景”和 `!` 说明入口；只有 `custom` 显示四项底层控件。说明模态框每次打开都反映当前选择，隐藏字段继续参与校验和原接口保存。
 
-## 关键决策
+不得改变：
 
-- **UI 映射而非新配置字段**：预设 ID 不进入 KV，避免前后端协议和迁移成本。
-- **精确匹配而非近似匹配**：四项值完全相等才显示预设，其他组合均为 `custom`。
-- **单文件实现**：沿用 CGAX-Pages 的自包含 HTML/CSS/JavaScript，不增加依赖或抽象层。
-- **既有测试扩展**：只扩展 `../../CGAX-Pages/work-products/tests/connection-settings.test.mjs`；该测试继续从最终位置以 `../../admin/index.html` 引用产品文件。
-- **静态合同 + 手工交互**：Node 回归覆盖源码合同，浏览器检查覆盖 DOM 状态、键盘操作、响应式和控制台。
-- **顺序实施**：测试、UI、文档/发布共享同一合同，不并行修改。
+- 五个稳定 ID、四组预设数值或精确匹配规则；
+- `GET/POST /admin/config.json` 的字段、鉴权或状态码；
+- 环境变量优先级、Worker 默认值和连接运行逻辑；
+- `login/`、`noADMIN/`、`noKV/`、vendor/data 或其他无关页面；
+- Cloudflare 部署流程。
 
-## 依赖图
+## 关键状态合同
+
+| 事件 | 选择状态 | 四项控件 | 四项值 |
+| --- | --- | --- | --- |
+| 加载、刷新、取消修改 | 按已保存四项值精确推断 | 仅 `custom` 显示 | 回填保存值 |
+| 选择四个预设之一 | 保持所选预设 | 隐藏 | 写入该预设精确值 |
+| 选择 `custom` | 保持 `custom` | 显示 | 不改写 |
+| 编辑任一自定义控件 | 保持 `custom` | 显示 | 只改用户编辑项 |
+| 自定义保存成功 | 本次会话保持 `custom` | 显示 | 保存现有四项值 |
+| 后续刷新 | 重新精确推断 | 由推断结果决定 | 回填保存值 |
+
+## 依赖顺序
 
 ```text
-已批准 SPEC
-  → Task 1：连接预设 RED 合同
-    → Task 2：管理页完整交互
-      → Checkpoint A：前端功能与视觉
-        → Task 3：三语文档与发布同步
-          → Checkpoint B：两仓库最终验收
+修订 SPEC + 当前实现基线
+  -> Task 1：新增 RED 交互合同
+    -> Task 2：实现紧凑 UI、状态与模态框
+      -> Checkpoint A：前端自动化与手工验收
+        -> Task 3：三语文档和发布合同同步
+          -> Checkpoint B：两仓库最终门禁
 ```
 
-## Task 1：建立连接预设前端 RED 合同
-
-**描述**
-
-扩展现有管理页源码回归，先证明五个选项、精确映射、推断/填充入口、限制说明和自定义保值行为尚未实现。不得修改 `admin/index.html`。
+## Task 1：建立交互修订 RED 合同
 
 **范围**
 
-- 修改 `../../CGAX-Pages/work-products/tests/connection-settings.test.mjs`。
-- 保留现有四项控件、最小值、checkbox 宽度和保存合同断言。
-- 新增断言覆盖：
-  - `balanced`、`long_lived`、`weak_network`、`resource_saver`、`custom` 五项；
-  - 四个预设的精确数值；
-  - 选择预设、读取当前值、精确推断和手动修改同步入口；
-  - `custom` 分支不写四项值；
-  - 环境变量优先、仅新连接生效、吞吐边界和 XHTTP 限制说明。
+只修改 `../../CGAX-Pages/work-products/tests/connection-settings.test.mjs`，不得修改产品页面。
+
+在保留现有五项映射、配置保存、最小值和 checkbox 固定宽度断言的基础上，增加以下回归：
+
+- “使用场景”标签使用 `.label-with-hint`，旁边存在 `.inline-hint-btn`、`title` 和 `aria-label="查看使用场景说明"`；
+- 主表单不再包含常驻 `connectionProfileDescription`/`connectionProfileNotes`，独立说明模态框仍包含当前场景说明和四条共同限制；
+- 模态框具有可读标题、对话框语义、关闭按钮、遮罩关闭、`Escape` 关闭和焦点返回合同；
+- 四个现有控件完整位于一个自定义设置容器中，预设时 `hidden`，`custom` 时显示，且控件不使用 `disabled`；
+- 选择 `custom` 不写值；选择预设先写四项精确值，再同步隐藏状态；
+- 自定义编辑强制并保持 `custom`，即使数值刚好匹配预设也不自动收起；
+- 加载和取消修改仍按值推断；保存后不重新推断当前显式 `custom` 会话；
+- 既有保存对象继续读取隐藏控件并输出原四字段。
+
+优先扩展当前 Node 测试：静态结构用源码断言，状态转换用最小 `document` 桩和函数提取执行，不引入 `jsdom`、包清单或新依赖。
 
 **验收标准**
 
-- [ ] 新断言在现有页面上失败，且失败原因只指向预设功能缺失。
-- [ ] 既有三组连接设置断言仍通过。
-- [ ] 测试仍使用 `new URL('../../admin/index.html', import.meta.url)`，不出现机器绝对路径。
+- [x] 新断言在当前页面上按预期失败，失败只对应本次交互修订缺失。
+- [x] 现有五项映射、保存基线、最小值和 checkbox 回归仍通过。
+- [x] 测试继续以 `new URL('../../admin/index.html', import.meta.url)` 引用产品文件，不含机器绝对路径。
+- [x] RED 输出被记录为实施证据，不把预期失败表述为仓库回归通过。
 
 **验证**
 
@@ -61,47 +85,50 @@
 node --test work-products/tests/connection-settings.test.mjs
 ```
 
-预期：新增断言 RED，既有断言不回退。保存完整失败输出作为本任务 RED 证据。
+预期：新增合同 RED，既有合同无额外回退。
 
 **依赖**：无。
 
-**可能修改文件**
+**回滚**：仅撤销本任务新增测试，不触碰产品页面。
 
-- `../../CGAX-Pages/work-products/tests/connection-settings.test.mjs`
-
-**规模**：S，1 个文件。
-
-**回滚**
-
-只移除本任务新增断言，恢复原测试文件；不触碰产品页面。
-
-## Task 2：实现管理页预设与自定义完整交互
-
-**描述**
-
-在现有“连接竞速与保活”区域加入下拉框和紧邻说明，使用一个不可变预设对象及小型读、写、推断函数打通加载、选择、手动编辑、取消修改和保存后刷新。
+## Task 2：实现紧凑 UI、显式 custom 状态与说明模态框
 
 **范围**
 
-- 修改 `../../CGAX-Pages/admin/index.html`。
-- 在四项控件前增加带可见 `<label>` 的原生 `<select>` 及说明区域。
-- 实现以下最小职责：
-  - 读取当前四项表单值；
-  - 用精确四字段匹配推断预设或 `custom`；
-  - 选择非 `custom` 时填入四项值并调用 `markModified('proxy')`；
-  - 选择 `custom` 时只更新选择状态，不写入四项控件；
-  - 手动修改任一现有控件时重新推断并标记修改；
-  - `applyProxyConfigToForm()` 回填四项后同步推断选择状态。
-- 固定显示四条限制说明：环境变量优先、仅新连接生效、竞速不等于视频吞吐、XHTTP 不使用该保活定时器。
-- 保留现有整数/最小值校验、`currentConfig.连接设置` 形状及 checkbox 固定宽度。
+只修改 `../../CGAX-Pages/admin/index.html`，使 Task 1 转绿。
+
+### 2.1 标记与样式
+
+- 用 `.label-with-hint` 包裹“使用场景”标签和 `!` 按钮，复用 `.inline-hint-btn` 的现有视觉、深色模式和焦点样式。
+- 删除主表单常驻说明段落与限制列表及其无用专属样式。
+- 用一个 `connectionCustomSettings` 容器包住现有四项控件；只切换原生 `hidden`，不得禁用、清空、复制或改名控件。
+- 新增独立“使用场景说明”模态框，复用现有 overlay/modal 视觉；提供 `role="dialog"`、`aria-modal="true"`、标题关联及有名称的关闭按钮。
+- 只补充该模态框内容所需的最小局部样式，保持 320、768、1024、1440 px 无横向溢出。
+
+### 2.2 状态函数
+
+- 保留 `CONNECTION_PROFILES`、`readConnectionSettingsForm()` 和 `inferConnectionProfile()` 的精确映射。
+- 增加一个小函数同步 `connectionCustomSettings.hidden`。
+- 让加载/刷新/取消路径调用“按当前值推断 + 同步容器”；未知组合稳定为 `custom`。
+- 选择非 `custom` 时写入预设值、同步隐藏状态并调用 `markModified('proxy')`。
+- 选择 `custom` 时只显示容器，不改值、不反推、不凭空标记配置值变化。
+- `handleConnectionSettingChange()` 只保持 `custom`、显示容器并标记修改，不再按数值反推预设。
+- 保存后不调用会把显式 `custom` 改回预设的推断函数；刷新和取消仍通过 `applyProxyConfigToForm()` 重新推断。
+
+### 2.3 模态框行为
+
+- 每次打开时读取 `connectionProfile.value`，填入对应 UI 名称、说明和四条共同限制。
+- 打开后把焦点移入模态框；`Tab` 与 `Shift+Tab` 循环约束在模态框内；关闭按钮、遮罩或 `Escape` 都可关闭，并把焦点返回场景 `!` 按钮。
+- 关闭时移除本模态框的临时键盘监听，避免重复打开后累积监听器。
+- 不复用 `authTokenHelpModal` 的内容切换状态，不改变 UUID/TOKEN/自定义优选现有行为。
 
 **验收标准**
 
-- [ ] 四个预设分别填入 SPEC 中的精确值。
-- [ ] `custom` 不修改现值；非预设组合显示 `custom`；改回精确组合恢复对应预设。
-- [ ] 加载、取消修改和保存后刷新均根据四项值推断，不持久化预设 ID。
-- [ ] 既有保存、校验、ProxyIP 和显式代理设置不受影响。
-- [ ] 页面无新增依赖、弹窗、卡片或 Worker API 调用。
+- [x] Task 1 的目标测试全部 GREEN。
+- [x] 预设、`custom`、编辑、保存、刷新和取消符合关键状态合同。
+- [x] 隐藏字段仍使用现有校验并进入 `currentConfig.连接设置` 四字段。
+- [x] 无新增依赖、配置字段、Worker 运行改动或无关格式化。
+- [x] 当前页面的其他模态框和代理设置不回退。
 
 **验证**
 
@@ -112,53 +139,44 @@ node --test work-products/tests/connection-settings.test.mjs work-products/tests
 git -c safe.directory='C:/Users/brand/SynologyDrive/Code/CGAX-Pages' diff --check
 ```
 
-**依赖**：Task 1。
+**依赖**：Task 1 RED 证据。
 
-**可能修改文件**
+**回滚**：把测试和 `admin/index.html` 作为同一前端修订补丁回退；不触碰已发布的预设映射或 Worker。
 
-- `../../CGAX-Pages/admin/index.html`
+## Checkpoint A：前端功能、可访问性与视觉
 
-**规模**：S，1 个文件。
+排除说明：2026-08-01 用户明确表示“不用浏览器预览，逻辑无误即可”。以下运行时验收保持未执行、未勾选，不以源码测试冒充视觉或真实浏览器证据；该排除仅解除本轮 Task 3 的依赖，不扩大部署或生产验证范围。
 
-**回滚**
+- [ ] 四个预设只显示选择器和 `!`，不为隐藏容器保留高度。
+- [ ] `custom` 显示四项控件且不改值；编辑到任一预设精确值时仍保持 `custom`。
+- [ ] 保存当前会话、刷新和取消修改分别符合状态合同。
+- [ ] `!` 每次显示当前场景说明及四条限制。
+- [ ] Tab/Enter/Space/Escape、关闭按钮、遮罩和焦点返回可用。
+- [ ] 320、768、1024、1440 px 无横向溢出或 checkbox 拉伸。
+- [ ] `/login/`、`/admin/`、`/noADMIN/`、`/noKV/` 无新增控制台错误。
+- [ ] 对比截图存放在 `../../CGAX-Pages/work-products/debug/`；若浏览器环境仍拦截本地地址，明确标记视觉门未完成，不以源码测试代替。
 
-移除预设 markup、常量与辅助函数；恢复四项控件原 `onchange="markModified('proxy')"`，保持既有四字段保存逻辑。
+本轮经用户明确排除浏览器预览后，以自动化逻辑合同继续交付；未执行项不得表述为视觉或真实浏览器验证。
 
-## Checkpoint A：前端功能与视觉
-
-- [ ] Task 1 的 RED 已转为 GREEN，原有连接设置与前端性能回归通过。
-- [ ] 使用 `python -m http.server 8000 --directory ../CGAX-Pages` 预览 `/admin/`。
-- [ ] 依次选择四个预设并核对值、说明、修改状态和 `custom` 保值行为。
-- [ ] 保存、刷新、取消修改后推断一致。
-- [ ] 键盘可聚焦、展开、选择和保存；控制台无新增错误。
-- [ ] 在 320、768、1024、1440 px 检查换行、控件尺寸和横向溢出。
-- [ ] 烟测 `/login/`、`/noADMIN/`、`/noKV/`，确认静态路径未受影响。
-- [ ] 为 PR 保留管理页桌面与移动端前后对比截图；过程截图只放在 `../../CGAX-Pages/work-products/debug/`。
-
-未通过 Checkpoint A 不得进入文档和发布同步。
-
-## Task 3：同步三语文档与跨仓库发布合同
-
-**描述**
-
-在前端行为通过后，更新 CfGfwAX 三语说明与发布元数据。文档只描述已实际实现的预设 UI，不宣称视频吞吐加速、自动识别或生产效果。
+## Task 3：同步三语文档与补丁发布合同
 
 **范围**
 
-- 修改 `README.md` 的简体中文、繁体中文和英文连接设置段落，保持三种语言语义一致。
-- 按实际当前版本执行下一语义化补丁发布：
-  - 在 `CHANGELOG` 顶部新增独立版本节，仅使用允许的 `### ADD` 或 `### Change`；
-  - 更新 `_worker.js` 的 `const Version`；
-  - 更新 `work-products/tests/chain_proxy.test.mjs` 的版本断言。
-- CHANGELOG 明确：新增场景预设与自定义、现有四字段/API 不变、不包含自动模式。
-- 保留所有既有发布节和用户未提交变更，不复用历史版本标题。
+在 Checkpoint A 通过或用户明确排除浏览器预览后修改 CfGfwAX：
+
+- `README.md`：简体中文、繁体中文、英文同步说明 `!` 入口、预设时隐藏底层控件、`custom` 保值，以及原有环境变量/协议边界；
+- `CHANGELOG`：按实际交付在顶部新增补丁版本节，使用已定义的 `### Change`（如实际交付语义变化则在允许标题中选择），不得改写历史节；
+- `_worker.js`：只同步 `const Version`，不改变连接运行逻辑；
+- `work-products/tests/chain_proxy.test.mjs`：同步版本断言。
+
+版本执行前重新读取当前顶部版本。若仍为 v2.4.9，则发布 v2.4.10；否则取当时版本的下一补丁号。
 
 **验收标准**
 
-- [ ] 三语说明覆盖五项选择、环境变量优先、仅新连接生效、XHTTP 限制和非吞吐承诺。
-- [ ] Worker、CHANGELOG 顶部和版本断言完全一致，且为实际当前版本的下一补丁版本。
-- [ ] CHANGELOG 只使用管理页允许的三级标题，旧版本节原文不变。
-- [ ] 未增加 Worker 运行逻辑、配置字段或部署命令。
+- [x] 三种语言语义一致，没有把预设描述为吞吐或视频加速。
+- [x] 新顶部 CHANGELOG、Worker Version 和测试断言完全一致。
+- [x] CHANGELOG 只使用 `ADD/Change/Debug/Delete/New` 中语义正确的三级标题。
+- [x] `_worker.js` 除版本常量外无运行逻辑变化。
 
 **验证**
 
@@ -178,50 +196,38 @@ node --test work-products/tests/connection-settings.test.mjs work-products/tests
 git -c safe.directory='C:/Users/brand/SynologyDrive/Code/CGAX-Pages' diff --check
 ```
 
-**依赖**：Task 2 与 Checkpoint A。
+**依赖**：Task 2，以及 Checkpoint A 通过或用户明确排除浏览器预览。
 
-**可能修改文件**
+**回滚**：前端补丁与发布元数据分别保持可逆；回退发布元数据时一起撤销新增顶部节、Version 和版本断言，不改写更早版本。
 
-- `README.md`
-- `CHANGELOG`
-- `_worker.js`
-- `work-products/tests/chain_proxy.test.mjs`
+## Checkpoint B：最终验收与发布边界
 
-**规模**：M，4 个文件。
+- [x] 修订规格的 13 项验收标准逐项有逻辑、文档或明确排除证据。
+- [x] 两仓库目标测试、CfGfwAX 全量 Node 回归、语法和差异检查通过。
+- [x] 变更范围只含本次 UI、对应测试、三语文档、发布元数据和任务状态。
+- [x] `CGAX-Pages` 静态页面应先于 CfGfwAX 版本/文档发布；本计划不执行发布。
+- [x] Cloudflare、真实 Codex、视频和网页体验未验证时明确标记为生产未验证。
 
-**回滚**
+## 风险与控制
 
-将本任务新增的顶部发布节、版本值、版本断言和三语段落作为一个发布元数据补丁回退；不得改写更早版本节。
-
-## Checkpoint B：最终验收
-
-- [ ] SPEC 的 10 项验收标准逐项有证据。
-- [ ] 两仓库目标测试、全量 Node 回归、语法和差异检查全部通过。
-- [ ] 管理页桌面/移动端视觉及键盘交互通过，无新增控制台错误。
-- [ ] Worker、CHANGELOG 和版本断言一致。
-- [ ] 变更集仅包含本功能、计划发布元数据及实施前已有用户基线。
-- [ ] CGAX-Pages 应先发布静态管理页；CfGfwAX 后续发布只同步版本与文档，不新增 Worker API。
-- [ ] Cloudflare/GitHub Pages 发布和真实 Codex、视频、网页体验验证仍由用户控制，未执行时标记为生产未验证。
-
-## 风险与缓解
-
-| 风险 | 影响 | 缓解 |
+| 风险 | 级别 | 控制 |
 | --- | --- | --- |
-| 预设覆盖自定义值 | 高 | `custom` 分支禁止写值；未知组合精确归类为 `custom` |
-| 页面显示预设但 KV 值不一致 | 高 | 不保存预设 ID；显示状态始终由四项实际表单值推断 |
-| 环境变量让管理页值未实际生效 | 中 | 固定显示环境变量优先提示，不声称显示运行有效值 |
-| 新事件处理破坏修改/取消流程 | 中 | 复用 `markModified('proxy')` 和 `applyProxyConfigToForm()`，覆盖加载与取消检查 |
-| 单文件页面布局回归 | 中 | 复用现有表单样式，保留 checkbox 回归，并做四断点视觉检查 |
-| 文档夸大性能 | 中 | 明确只影响建连/保活，不承诺吞吐、断流或生产收益 |
-| 两仓库发布错序 | 低 | 先发布 CGAX-Pages 静态页，再同步 CfGfwAX 发布元数据 |
+| 隐藏字段未保存或被清空 | 高 | 只切换容器 `hidden`，不 `disabled`；测试保存对象仍读取四项控件 |
+| 显式 `custom` 被自动收起 | 高 | 编辑和保存不反推；只在加载、刷新、取消时推断 |
+| 选择 `custom` 覆盖现值 | 高 | `custom` 分支零写值，并用执行型测试固定 |
+| 模态框监听器累积、焦点逃逸或焦点丢失 | 中 | 独立开关函数、成对注册/移除键盘监听、Tab/Shift+Tab 焦点约束、关闭后返回触发按钮 |
+| 复用 UUID 模态框造成状态耦合 | 中 | 只复用样式和交互模式，DOM 与函数保持独立 |
+| 小屏出现空白或溢出 | 中 | 原生 `hidden` + 四断点手工检查 |
+| 文档暗示生产性能保证 | 中 | 保留环境变量、新连接、协议和吞吐边界；本地证据单独陈述 |
+| 实施期间版本基线前移 | 低 | Task 3 开始时重新读取语义版本，不硬编码复用 v2.4.10 |
 
 ## 上下文加载约定
 
-- Task 1 只加载 SPEC 的预设、交互、测试段和现有 `connection-settings.test.mjs`。
-- Task 2 只加载 Task 1 RED、`admin/index.html` 的连接设置 markup、`applyProxyConfigToForm()`、保存逻辑及相邻 select 模式。
-- Task 3 只加载已验证 UI 行为、README 三语连接设置段、CHANGELOG 顶部和版本合同。
-- 任一任务发现规格外接口、数值或范围决策时停止，不自行扩展。
+- Task 1 只加载修订规格的交互/测试段和现有连接设置测试。
+- Task 2 只加载 Task 1 RED、连接设置 markup/CSS、场景函数、`applyProxyConfigToForm()`、`saveProxy()`、取消路径及 UUID 提示入口/通用模态框样式。
+- Task 3 只加载已验证 UI 行为、README 三语连接场景段、CHANGELOG 顶部及版本合同。
+- 发现需要修改预设名称/数值、接口、Worker 逻辑、依赖或发布流程时停止并询问，不自行扩展。
 
 ## 开放问题
 
-无。计划不引入新的产品或架构决策。
+无。实施与审查修复已由用户后续调用公开工作流授权并完成。

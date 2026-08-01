@@ -68,7 +68,7 @@
 | 节省连接资源 | 关 | 1 | 1 | 60000 ms |
 | 自定义 | 保留当前值 | 自定义 | 自定义 | 自定义 |
 
-预设只填充现有四项设置，不保存额外的场景 ID；手动修改后会精确匹配预设，否则显示“自定义”。设置只影响新建连接，现有长连接需重连；保活间隔用于 WebSocket/gRPC 而不作用于 XHTTP，竞速主要改善建连与失败切换，不直接提高视频吞吐。
+预设模式只显示“使用场景”和旁边的 `!` 说明入口，四项底层控件仅在“自定义”时显示；`!` 会展示当前场景说明和共同限制。选择“自定义”会保留当前值，手动编辑及保存后的当前会话继续保持“自定义”；加载、刷新或取消修改时再按四项保存值精确匹配预设。预设只填充现有四项设置，不保存额外的场景 ID。设置只影响新建连接，现有长连接需重连；保活间隔用于 WebSocket/gRPC 而不作用于 XHTTP，竞速主要改善建连与失败切换，不直接提高视频吞吐。
 
 ### 动态代理路径
 
@@ -147,7 +147,7 @@
 | 節省連線資源 | 關 | 1 | 1 | 60000 ms |
 | 自訂 | 保留目前值 | 自訂 | 自訂 | 自訂 |
 
-預設只會填入既有四項設定，不會儲存額外的場景 ID；手動修改後會精確比對預設，否則顯示「自訂」。設定只影響新建連線，現有長連線需重新連線；保活間隔用於 WebSocket/gRPC 而不作用於 XHTTP，競速主要改善連線建立與失敗切換，不會直接提高影片吞吐量。
+預設模式只顯示「使用場景」和旁邊的 `!` 說明入口，四項底層控制項僅在「自訂」時顯示；`!` 會顯示目前場景說明和共同限制。選擇「自訂」會保留目前值，手動編輯及儲存後的目前工作階段繼續保持「自訂」；載入、重新整理或取消修改時才會依四項儲存值精確比對預設。預設只會填入既有四項設定，不會儲存額外的場景 ID。設定只影響新建連線，現有長連線需重新連線；保活間隔用於 WebSocket/gRPC 而不作用於 XHTTP，競速主要改善連線建立與失敗切換，不會直接提高影片吞吐量。
 
 ### 動態代理路徑
 
@@ -226,7 +226,7 @@ Visit `https://your-domain/admin` and sign in with the `ADMIN` password. You can
 | Connection resource saver | Off | 1 | 1 | 60000 ms |
 | Custom | Keep current value | Custom | Custom | Custom |
 
-Profiles only fill the existing four settings and do not persist a separate profile ID. Manual edits are matched exactly to a profile; unmatched values remain **Custom**. Changes affect new connections only, so existing long-lived connections must reconnect. Keepalive applies to WebSocket/gRPC, not XHTTP, while racing targets connection setup and failover rather than sustained video throughput.
+Preset modes show only **Profile** and the adjacent `!` help entry; the four underlying controls appear only for **Custom**, while `!` shows the current profile description and shared limits. Selecting **Custom** preserves the current values, and manual edits plus a successful save keep the current session in **Custom**. Loading, refreshing, or cancelling changes infers the profile again from the four saved values. Profiles only fill the existing four settings and do not persist a separate profile ID. Changes affect new connections only, so existing long-lived connections must reconnect. Keepalive applies to WebSocket/gRPC, not XHTTP, while racing targets connection setup and failover rather than sustained video throughput.
 
 ### Dynamic proxy paths
 
