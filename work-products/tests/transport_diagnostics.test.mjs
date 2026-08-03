@@ -88,6 +88,6 @@ test('三个入站处理器显式传递自己的传输类型', () => {
 	const calls = [...source.matchAll(/forwardataTCP\(([\s\S]*?)\);/g)].map(match => match[1]);
 
 	assert.equal(calls.filter(call => call.includes("'xhttp'")).length, 1);
-	assert.equal(calls.filter(call => call.includes("'grpc'")).length, 2);
-	assert.ok(calls.filter(call => call.includes("'websocket'")).length >= 4);
+	assert.equal(calls.filter(call => call.includes("'grpc'")).length, 1);
+	assert.equal(calls.filter(call => call.includes("'websocket'")).length, 3);
 });

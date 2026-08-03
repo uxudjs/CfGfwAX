@@ -74,3 +74,9 @@ log/
 !/work-products/debug/xhttp-concurrent-cpu-timeout.md
 !/work-products/debug/xhttp-tiny-stream-pump-64b.json
 !/work-products/debug/xhttp-tiny-native-fair-64b.json
+!/work-products/debug/ws-grpc-baseline.json
+!/work-products/debug/ws-grpc-candidate-grpc-parser.json
+!/work-products/debug/ws-grpc-candidate-grpc-uplink.json
+!/work-products/debug/ws-grpc-candidate-grpc-buffer-reuse.json
+!/work-products/debug/ws-grpc-candidate-ws-uplink.json
+!/work-products/debug/ws-grpc-final-decision.md

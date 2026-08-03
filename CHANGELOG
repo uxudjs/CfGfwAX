@@ -1,3 +1,112 @@
+## [v2.4.29]
+
+### Delete
+
+- 停止 Surge 订阅兼容：查询参数、目标类型或 User-Agent 命中 Surge 时明确返回 410，不再调用订阅转换后端；删除 Surge 专用路由、路径处理与订阅热补丁，并在三语 README 说明 Trojan 已移除、不再维护及其流量特征风险。VLESS、独立 Shadowsocks 与其他订阅格式不受影响。
+
+## [v2.4.28]
+
+### Delete
+
+- 移除 Trojan 入站、UDP、fallback、订阅补丁与管理页协议选项，旧 Trojan 节点配置读取时自动回落为 VLESS；VLESS 的 WebSocket、gRPC、XHTTP、DNS 与链式代理路径保持可用，独立 Shadowsocks 和其他代理类型不受影响。
+
+## [v2.4.27]
+
+### Debug
+
+- 修复 WS/gRPC schema v2 审查发现的四项 fail-closed 缺口：相同 predecessor/candidate Worker 不再产生 GO，校准决策、迭代转换和 run 级重复轨迹均可重算，profile 超时覆盖合法状态机并等待取消收敛，第二个 run 结构失败时保留已完成的第一轮证据。本版本未修改三种协议的运行逻辑。
+
+## [v2.4.26]
+
+### Change
+
+- 协调更新 `CfGfwAX`、`CGAX-Pages` 与 `BestCfCdn` 的项目规则：补齐页面、订阅与链式测速的跨仓契约，修正前端回归测试路径，并固化 Windows UTF-8 测试要求，降低接口变更遗漏验证的风险。本版本未修改 Worker 运行逻辑。
+
+## [v2.4.25]
+
+### Debug
+
+- 修复 WS/gRPC 基准的单样本校准与未稳态测量：每阶段改用三个 CPU 样本的中位数，正式测量前要求连续三个五轮窗口通过 CV/趋势门，并只选择首个通过的尾部七轮窗口；窗外稳态最多重校准两次，全部轮次和判定原因均可重算。本版本未修改三种协议的运行逻辑。
+
+## [v2.4.24]
+
+### Change
+
+- 批准 WS/gRPC 第二轮稳态基准计划：先固化三样本校准与确定性尾部窗口，再以每 profile 独立 child、反向顺序双 run 和 schema v2 重建 baseline；只有新 Checkpoint A 冻结后才依次评估三个 gRPC 候选与一个 WS 候选。本版本未修改三种协议的运行逻辑。
+- 将 v2.4.22 第一轮 `INCONCLUSIVE` 计划与任务清单原样归档到 `work-products/specs/`，保留失败基线、门禁和生产未验证边界。
+
+## [v2.4.23]
+
+### Debug
+
+- 定位 WS/gRPC baseline 不稳定来自测量未进入稳态、单样本校准、短 CPU 样本分辨率不足、32-profile 共用进程和窗口判定脱节；修订规格要求每 profile 独立 child、三样本校准、显式稳态与趋势门、反向顺序双 run，并保留 v2.4.22 失败证据。本版本未修改三种协议的运行逻辑。
+
+## [v2.4.22]
+
+### Debug
+
+- 新增 WS/gRPC 双运行 baseline 冻结门：从原始 run 重算 `baselineStatus`，环境、四类哈希、ready/CV 与跨 run CPU 中位数任一漂移均记录为 `INCONCLUSIVE`；超时也原子保存固定失败分类和源码指纹，取消不覆盖证据。仅精确放行 baseline 与四个候选 JSON，本版本未修改三种协议的运行逻辑。
+- 完成两个独立 32-profile 正式 run：环境及四类哈希一致，但两个 run 均含 `limited` profile，最大 CPU CV 为 35.8509%，4 个 profile 的跨 run CPU 中位数差超过 10%，因此 baseline 判为 `INCONCLUSIVE` 并按门禁跳过全部运行时候选。
+
+## [v2.4.21]
+
+### ADD
+
+- 新增 WS/gRPC 真实 Worker 热路径计量：独立于 CPU 计时记录源字节、显式复制字节/次数、协议缓冲分配、TCP 写入、下行发送和峰值排队；插桩点数量或源码形状漂移时 fail-closed，1 MiB gRPC 下载不再退化为输入块长度式伪复制指标。
+- 正式证据固定完整 32-profile manifest 与指标定义版本，移除 `--calibrate`；单 `--profile` 仅输出诊断且不得写正式证据，候选跨 run CPU 中位数差超过 10% 时不得 GO。本版本未修改三种协议的运行逻辑。
+
+## [v2.4.20]
+
+### Debug
+
+- 修复 WS/gRPC 性能基准的测量与证据生命周期：采用 1500–3500 ms 分阶段长窗口校准并保留总 CPU/轨迹，限制 profile、child 和父进程时长；两个 child 严格串行，失败、超时或取消均回收，完整证据以同目录临时文件原子替换。本版本未修改三种协议的运行逻辑。
+
+## [v2.4.19]
+
+### Change
+
+- 固化 WS/gRPC CPU 优化实施顺序：先修复长窗口校准、子进程收敛和真实热路径计量，稳定 baseline 前禁止运行时候选；候选使用冻结 profile 与逐对 A/B 判定，XHTTP 保持现有逻辑。
+
+## [v2.4.18]
+
+### Change
+
+- 修订 WS/gRPC 性能迭代规格：将分阶段长窗口校准、子进程收敛和真实 Worker 复制/分配计量设为 baseline 前置门；冻结证据前不得继续运行时候选，XHTTP 保持现有逻辑与生产验证边界。
+
+## [v2.4.17]
+
+### Debug
+
+- 修复 WS/gRPC 性能证据校验：从原始轮次重算 CPU CV、中位数、profile/run 状态及最终 decision，拒绝被覆写的派生结果，并准确记录每个 profile 的实际校准迭代数。
+- 将候选接线证明从源码正则升级为独立运行时探针；候选阶段的两个进程都必须在固定主 profile 中真实执行对应热路径，未调用的函数、注释或无效 marker 不再能够生成 GO 证据。
+
+## [v2.4.16]
+
+### ADD
+
+- 新增 WS/gRPC 协议专属流基准与判定合同：固定 1 MiB 双向负载、五档块大小及 gRPC 分片矩阵，以两个独立校准进程记录原始轮次和源码/fixture 哈希；候选必须执行哈希对应的实际 Worker handler，并按两个直接前序 A/B pair 独立满足主 profile CPU 至少改善 10%、支撑与非目标 CPU/wall 回退不超过 5%，否则判为 NO-GO。
+- 新增证据 schema 回归，拒绝高 CV 伪 ready、非有限数值、敏感字段、重复 run ID、predecessor 覆写以及跨阶段环境、哈希或 profile 漂移；本版本未修改 WS/gRPC 性能运行策略。
+
+## [v2.4.15]
+
+### Debug
+
+- 修复 WebSocket 首帧二进制类型竞态：在接受连接前固定 `binaryType = 'arraybuffer'`，确保新版 Cloudflare 运行时仍将首个二进制消息同步交付为 `ArrayBuffer`；保留带 `allowHalfOpen` 的接受尝试、无参兼容回退、Early Data 和 Upgrade 响应合同。
+
+## [v2.4.14]
+
+### Change
+
+- 批准 WS 与 gRPC 基准驱动协议迭代规格，并拆分为八个依赖有序任务：确定性 WS 二进制兼容修正、协议专属稳定基线、三个独立 gRPC 候选、一个 WS 上行候选及最终门禁；固定直接前序 A/B、实际 Worker 热路径、独立校准、内存与生命周期合同，每个性能候选均独立 GO/NO-GO，本版本尚未修改协议运行逻辑。
+- 将已完成的连接场景实施计划与任务清单原样归档到 `work-products/specs/`，保留历史验收和用户排除边界。
+
+## [v2.4.13]
+
+### Change
+
+- 提出 WS 与 gRPC 基准驱动协议迭代规格：确认两者已有的队列、BYOB 与 Grain 基础，明确 WS 首帧二进制兼容修正、gRPC 分片复制热点、协议专属稳定基准及独立 GO/NO-GO 门；本版本尚未修改协议运行逻辑。
+- 将已完成的连接场景预设与自定义规格归档到 `work-products/specs/`，保留其批准、实施与验收历史。
+
 ## [v2.4.12]
 
 ### Change

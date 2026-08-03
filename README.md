@@ -14,12 +14,18 @@
 
 ### 主要功能
 
-- 🛡️ **多协议支持** - 支持 VLESS、Trojan 与 Shadowsocks
+- 🛡️ **多协议支持** - 支持 VLESS 与 Shadowsocks
 - 📊 **管理后台** - 在线修改配置、查看日志与流量统计
 - 🛠️ **灵活部署** - 支持 Cloudflare Workers 与 Pages 上传
-- 🔄 **订阅生成** - 适配 Clash、Sing-box、Surge 等主流客户端
-- ⚡ **链式代理** - 支持 ProxyIP、SOCKS5、HTTP 与 Trojan fallback
+- 🔄 **订阅生成** - 适配 Clash、Sing-box、Loon、Quantumult X 等主流客户端
+- ⚡ **链式代理** - 支持 ProxyIP、SOCKS5、HTTP、HTTPS、TURN 与 SSTP
 - 🌐 **跨平台使用** - 支持 Windows、Android、iOS、macOS 与鸿蒙客户端
+
+### 协议维护说明
+
+- Trojan 已从 Worker 入站、订阅生成和管理页面中移除，后续不再维护。
+- Trojan 流量存在较明确的代理协议特征，本项目不建议继续使用或部署同类节点。
+- Surge 不原生支持本项目保留的 VLESS 节点格式，因此本项目不再提供 Surge 订阅兼容；`?surge`、`target=surge` 或 Surge User-Agent 请求会返回 HTTP 410。
 
 ### 部署使用
 
@@ -76,7 +82,6 @@
 /proxyip=proxyip.cmliussss.net
 /socks5=user:password@127.0.0.1:1080
 /http=user:password@127.0.0.1:8080
-/trojan=1.1.1.1:1234
 ```
 
 ### 免责声明
@@ -93,12 +98,18 @@
 
 ### 主要功能
 
-- 🛡️ **多協議支援** - 支援 VLESS、Trojan 與 Shadowsocks
+- 🛡️ **多協議支援** - 支援 VLESS 與 Shadowsocks
 - 📊 **管理後台** - 線上修改設定、查看日誌與流量統計
 - 🛠️ **彈性部署** - 支援 Cloudflare Workers 與 Pages 上傳
-- 🔄 **訂閱產生** - 適配 Clash、Sing-box、Surge 等主流用戶端
-- ⚡ **鏈式代理** - 支援 ProxyIP、SOCKS5、HTTP 與 Trojan fallback
+- 🔄 **訂閱產生** - 適配 Clash、Sing-box、Loon、Quantumult X 等主流用戶端
+- ⚡ **鏈式代理** - 支援 ProxyIP、SOCKS5、HTTP、HTTPS、TURN 與 SSTP
 - 🌐 **跨平台使用** - 支援 Windows、Android、iOS、macOS 與鴻蒙用戶端
+
+### 協議維護說明
+
+- Trojan 已從 Worker 入站、訂閱產生和管理頁面中移除，後續不再維護。
+- Trojan 流量存在較明確的代理協議特徵，本專案不建議繼續使用或部署同類節點。
+- Surge 不原生支援本專案保留的 VLESS 節點格式，因此本專案不再提供 Surge 訂閱相容；`?surge`、`target=surge` 或 Surge User-Agent 請求會傳回 HTTP 410。
 
 ### 部署使用
 
@@ -155,7 +166,6 @@
 /proxyip=proxyip.cmliussss.net
 /socks5=user:password@127.0.0.1:1080
 /http=user:password@127.0.0.1:8080
-/trojan=1.1.1.1:1234
 ```
 
 ### 免責聲明
@@ -172,12 +182,18 @@ A Cloudflare Workers/Pages edge tunnel solution further developed from edgetunne
 
 ### Features
 
-- 🛡️ **Multiple protocols** - Supports VLESS, Trojan, and Shadowsocks
+- 🛡️ **Multiple protocols** - Supports VLESS and Shadowsocks
 - 📊 **Admin panel** - Update settings and inspect logs and traffic statistics online
 - 🛠️ **Flexible deployment** - Supports Cloudflare Workers and Pages upload
-- 🔄 **Subscription generation** - Works with Clash, Sing-box, Surge, and other popular clients
-- ⚡ **Chained proxies** - Supports ProxyIP, SOCKS5, HTTP, and Trojan fallback
+- 🔄 **Subscription generation** - Works with Clash, Sing-box, Loon, Quantumult X, and other popular clients
+- ⚡ **Chained proxies** - Supports ProxyIP, SOCKS5, HTTP, HTTPS, TURN, and SSTP
 - 🌐 **Cross-platform** - Works with Windows, Android, iOS, macOS, and HarmonyOS clients
+
+### Protocol maintenance notice
+
+- Trojan has been removed from Worker ingress, subscription generation, and the admin panel, and is no longer maintained.
+- Trojan traffic has comparatively recognizable proxy-protocol characteristics; this project does not recommend continuing to use or deploy similar nodes.
+- Surge does not natively support the retained VLESS node format, so this project no longer provides Surge subscription compatibility; requests using `?surge`, `target=surge`, or a Surge User-Agent return HTTP 410.
 
 ### Installation
 
@@ -234,7 +250,6 @@ Preset modes show only **Profile** and the adjacent `!` help entry; the four und
 /proxyip=proxyip.cmliussss.net
 /socks5=user:password@127.0.0.1:1080
 /http=user:password@127.0.0.1:8080
-/trojan=1.1.1.1:1234
 ```
 
 ### Disclaimer

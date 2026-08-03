@@ -1,233 +1,353 @@
-# Implementation Plan: 连接场景紧凑交互修订
+# Implementation Plan: WS 与 gRPC 稳态基准 v2 与协议专属候选
 
 ## 状态
 
-实施与审查修复完成。Task 1 至 Task 3、焦点约束调试及 Checkpoint B 的逻辑、文档和本地发布合同均已通过；用户于 2026-08-01 明确排除浏览器预览并接受逻辑验证，因此 Checkpoint A 的视觉、真实键盘、四断点、控制台与截图项目未执行，但不阻塞本轮交付，且仍保持“未验证”边界。
+已规划，日期：2026-08-02，等待后续 `@uxu-code:build` 授权执行。用户本轮显式调用 `@uxu-code:plan`，据此批准当前 `work-products/SPEC.md` 的第二轮测量修订并授权生成计划；本轮只更新流程产物和项目规定的发布元数据，不修改 WS、gRPC 或 XHTTP 运行逻辑，不执行 Cloudflare 部署或真实客户端操作。
 
-## 规划依据
+第一轮 v2.4.22 计划与任务清单已原样归档为：
 
-- 用户本轮显式调用 `@uxu-code:plan`，授权把当前 `work-products/SPEC.md` 的 2026-08-01 交互修订草案转换为实施计划；这不等于授权执行计划。
-- 修订规格已明确目标、范围、交互状态、配置兼容、可访问性、测试策略、13 项验收标准、非目标和回滚边界，且没有材料性开放问题，足以规划，无需另建规格。
-- 当前实现基线已经核对：
-  - `../../CGAX-Pages/admin/index.html` 已有五个场景和四组精确映射；
-  - `connectionProfileDescription` 与 `connectionProfileNotes` 常驻主表单；
-  - 四项底层控件始终显示；
-  - `handleConnectionSettingChange()` 会立即调用 `syncConnectionProfileSelection()`；
-  - `saveProxy()` 保存后也会重新推断，无法保留显式 `custom` 会话状态；
-  - UUID 的 `.label-with-hint`、`.inline-hint-btn` 和通用模态框样式可复用，但连接说明必须使用独立模态框和独立焦点/关闭逻辑。
-- 当前发布基线为 v2.4.9。实施时若基线未变化，下一补丁版本为 v2.4.10；若期间已有新版本，必须重新读取并选择新的下一补丁版本，不能复用旧标题。
+- `work-products/specs/ws-grpc-first-pass.completed.plan.md`
+- `work-products/specs/ws-grpc-first-pass.completed.todo.md`
 
-## 目标与边界
+## 规划依据与充分性
 
-把管理页“连接竞速与保活”收敛为紧凑、可逆的表示层交互：预设模式只显示“使用场景”和 `!` 说明入口；只有 `custom` 显示四项底层控件。说明模态框每次打开都反映当前选择，隐藏字段继续参与校验和原接口保存。
+- 修订规格已明确目标、范围、协议/接口兼容、测量算法上下限、32-profile 冻结矩阵、schema v2 字段、候选顺序、量化门槛、回滚和生产验证边界；没有需要另建规格的材料性开放问题。
+- v2.4.22 的 `work-products/debug/ws-grpc-baseline.json` 已完成两个 32-profile run，但直接证据为 `INCONCLUSIVE`：最大 CPU CV 35.8509%，两个 run 分别有 9/5 个 `limited` profile，4 个 profile 跨 run CPU 中位数差超过 10%。该文件 SHA-256 `3321f9c2e38ebbdbcee7a46ef6af86e65894106cf24bc52800a20c059f27afb9` 必须保持不变。
+- 当前 benchmark 已具备冻结 profile matrix、真实 Worker 热路径计量、候选接线探针、证据重算、子进程收敛和原子写入；第二轮只修复已定位的测量缺陷，不重定义 source/copy/allocation 指标，不删除 profile，不增加 fixture 负载。
+- 当前缺口已经从源码和 v1 证据确认：每个 run 的 32 个 profile 共用一个 child；每个 profile 只有 2 次单迭代 warmup；校准阶段只有单样本；正式固定采 7 轮且逐轮要求落入时间窗；环境指纹尚未记录 logical cores 与 Windows power mode。
+- WS `binaryType` 已在 `accept()` 前设置；`connectStreams()` 的 BYOB/Grain、`connectXHTTPStreams()` 的 XHTTP 专属直通、公共上行队列和断流诊断都是既有基线。本计划不把这些既有行为计为新收益。
 
-不得改变：
+因此可直接规划，无需再次调用 `@uxu-code:spec`。
 
-- 五个稳定 ID、四组预设数值或精确匹配规则；
-- `GET/POST /admin/config.json` 的字段、鉴权或状态码；
-- 环境变量优先级、Worker 默认值和连接运行逻辑；
-- `login/`、`noADMIN/`、`noKV/`、vendor/data 或其他无关页面；
-- Cloudflare 部署流程。
+## 规划具体化
 
-## 关键状态合同
+为消除“趋势”和“最近连续窗口”的实现歧义，后续测试先固定以下纯算法合同：
 
-| 事件 | 选择状态 | 四项控件 | 四项值 |
-| --- | --- | --- | --- |
-| 加载、刷新、取消修改 | 按已保存四项值精确推断 | 仅 `custom` 显示 | 回填保存值 |
-| 选择四个预设之一 | 保持所选预设 | 隐藏 | 写入该预设精确值 |
-| 选择 `custom` | 保持 `custom` | 显示 | 不改写 |
-| 编辑任一自定义控件 | 保持 `custom` | 显示 | 只改用户编辑项 |
-| 自定义保存成功 | 本次会话保持 `custom` | 显示 | 保存现有四项值 |
-| 后续刷新 | 重新精确推断 | 由推断结果决定 | 回填保存值 |
+1. 对长度为奇数的窗口，令 `half = floor(n / 2)`；`startMedian` 为前 `half` 个 CPU 样本中位数，`endMedian` 为后 `half` 个样本中位数，中间样本不参与端点趋势。`trend = abs(endMedian - startMedian) / startMedian`；分母非有限或不大于 0 时 fail-closed。
+2. 稳态至少采 12 轮。每新增一轮后只检查尾部连续三个 5 轮窗口；三个窗口各自 CPU CV 与 trend 均 `<= 10%` 才进入正式测量。最多 24 轮。
+3. 稳态尾部窗口 CPU 中位数不在 `1500–3500 ms` 时触发重新校准；最多重校准 2 次，即初次加两次，共 3 个校准/稳态 attempt。
+4. 正式测量从第 7 轮起，每次只检查“当前最近 7 轮”；第一个通过 CPU CV、trend 及窗口中位数门的尾部窗口立即被选中并停止。最多采 14 轮，不允许事后从多个窗口中挑最佳结果。
+5. 校准每阶段以同一 iterations 采 3 个样本并按 CPU 中位数决策；中位数低于 100 ms 时仅乘 4，达到 100 ms 后才按 `2000 / median` 比例调整，并受阶段数、iterations、profile child 与总时限约束。
 
-## 依赖顺序
+这些具体化不改变规格阈值；若后续执行前要求采用另一趋势定义，应先修订规格和本计划，不得在实现中静默替换。
+
+## 依赖图
 
 ```text
-修订 SPEC + 当前实现基线
-  -> Task 1：新增 RED 交互合同
-    -> Task 2：实现紧凑 UI、状态与模态框
-      -> Checkpoint A：前端自动化与手工验收
-        -> Task 3：三语文档和发布合同同步
-          -> Checkpoint B：两仓库最终门禁
+批准修订 SPEC
+  -> T1 稳态与窗口选择纯合同
+      -> T2 每 profile 独立 child、schema v2 与正式 CLI
+          -> T3 双 run baseline v2
+              -> Checkpoint A
+                  ├─ INCONCLUSIVE -> 跳过 T4—T7 -> T8
+                  └─ frozen -> T4 gRPC 增量解析
+                                -> T5 gRPC 上行水位
+                                    -> T6 gRPC 下行复用
+                                        -> Checkpoint B
+                                            -> T7 WS 上行水位
+                                                -> T8
 ```
 
-## Task 1：建立交互修订 RED 合同
+T1—T3 严格串行。T4—T7 也严格串行，因为每项必须以直接前序 Worker 为 A/B 基线；一个协议或候选的 NO-GO 不自动否定后续候选，但必须先回滚其业务代码。
+
+## 共用完成标准
+
+- 未通过 Checkpoint A 前，`_worker.js` 除补丁 Version 外不得出现 WS/gRPC 性能业务修改；XHTTP 运行逻辑在全部任务中保持不变。
+- 正式矩阵精确保留 32 个 profile、每方向 1 MiB fixture、当前 metric definition；缺失、重复、额外或改名均使证据 `INCONCLUSIVE`。
+- 正式 baseline/candidate 必须在相同 Worker、benchmark、fixture、profile matrix、metric definition 和环境指纹下完成两个独立 run；全部用于决策的 profile CPU CV/trend 与跨 run 中位数差均 `<= 10%`。
+- 每个候选只改变一个机制；两个固定 A/B pair 的主 profile CPU 中位数均至少下降 10%，方向一致；非目标 CPU 和全部 profile wall time不得回退超过 5%。
+- 字节、顺序、frame/message、队列硬上限、关闭、取消、重试、内存有界性、证据完整性或 child 收敛任一失败，baseline 为 `INCONCLUSIVE`，候选为回滚业务代码后的 `NO-GO`。
+- `sourceBytes`、`copiedBytes`、`copyOperations`、`allocatedBytes`、writes、sends 和 peak queue 保持分离；CPU 计时与计数探针分离或严格对称。
+- 所有新测试仅位于 `work-products/tests/`，从最终位置以相对路径引用产品文件；证据不含域名、URL、UUID、凭据或真实流量。
+- 每个实际完成的任务按当时顶部版本取下一补丁号，同步顶部 `CHANGELOG`、`_worker.js` Version 和 `work-products/tests/chain_proxy.test.mjs`；历史 release 节不得改写。
+- 每项至少通过目标测试、`node --test`、`node --check _worker.js`、CHANGELOG 标题测试和 `git diff --check`；不运行 Wrangler、不部署。
+
+固定候选判定矩阵沿用批准规格：
+
+| 候选 | 主 profile | 支撑 profile | 固定非目标 |
+| --- | --- | --- | --- |
+| gRPC parser | `grpc-upload-fragmented-64b` | `grpc-upload-multiframe-256b` | gRPC 上传/双向 1 KiB、16 KiB、64 KiB及全部 gRPC 下载 |
+| gRPC uplink | `grpc-bidirectional-64b` | `grpc-upload-64b` | gRPC 上传/双向 1 KiB、16 KiB、64 KiB及全部 gRPC 下载 |
+| gRPC buffer reuse | `grpc-bidirectional-64b` | `grpc-download-64b` | gRPC 下载/双向 1 KiB、16 KiB、64 KiB及全部 gRPC 上传 |
+| WS uplink | `ws-bidirectional-64b` | `ws-upload-64b` | WS 上传/双向 1 KiB、16 KiB、64 KiB及全部 WS 下载 |
+
+## Task 1：固化三样本校准、稳态和正式窗口合同
 
 **范围**
 
-只修改 `../../CGAX-Pages/work-products/tests/connection-settings.test.mjs`，不得修改产品页面。
-
-在保留现有五项映射、配置保存、最小值和 checkbox 固定宽度断言的基础上，增加以下回归：
-
-- “使用场景”标签使用 `.label-with-hint`，旁边存在 `.inline-hint-btn`、`title` 和 `aria-label="查看使用场景说明"`；
-- 主表单不再包含常驻 `connectionProfileDescription`/`connectionProfileNotes`，独立说明模态框仍包含当前场景说明和四条共同限制；
-- 模态框具有可读标题、对话框语义、关闭按钮、遮罩关闭、`Escape` 关闭和焦点返回合同；
-- 四个现有控件完整位于一个自定义设置容器中，预设时 `hidden`，`custom` 时显示，且控件不使用 `disabled`；
-- 选择 `custom` 不写值；选择预设先写四项精确值，再同步隐藏状态；
-- 自定义编辑强制并保持 `custom`，即使数值刚好匹配预设也不自动收起；
-- 加载和取消修改仍按值推断；保存后不重新推断当前显式 `custom` 会话；
-- 既有保存对象继续读取隐藏控件并输出原四字段。
-
-优先扩展当前 Node 测试：静态结构用源码断言，状态转换用最小 `document` 桩和函数提取执行，不引入 `jsdom`、包清单或新依赖。
+- 在 `work-products/tests/ws_grpc_stream_benchmark.test.mjs` 先增加 RED 合同，再在 benchmark 中实现最小纯函数，使测试转绿。
+- 将校准改为每阶段 3 样本 CPU 中位数；覆盖低于 100 ms 的 4 倍几何放大、达到 100 ms 后的比例修正、iterations/阶段上限和完整轨迹。
+- 增加稳定窗口的 median/CV/trend 重算、至少 12/最多 24 轮、连续三个尾部 5 轮窗口、最多两次重校准，以及正式最近 7 轮/最多 14 轮的确定性选择。
+- 只实现纯判定和单 profile 内部状态机；不改变父进程矩阵编排，不写 schema v2 正式证据，不修改协议运行逻辑。
 
 **验收标准**
 
-- [x] 新断言在当前页面上按预期失败，失败只对应本次交互修订缺失。
-- [x] 现有五项映射、保存基线、最小值和 checkbox 回归仍通过。
-- [x] 测试继续以 `new URL('../../admin/index.html', import.meta.url)` 引用产品文件，不含机器绝对路径。
-- [x] RED 输出被记录为实施证据，不把预期失败表述为仓库回归通过。
+- [x] 单个高/低异常值不能驱动三样本校准；所有轨迹保留原始样本、中位数、iterations 和决策原因。
+- [x] 合成下降、上升、高 CV、稳定但窗口外、重校准后稳定和始终不稳定序列得到唯一可重算结果。
+- [x] 正式选择只取第一个通过门的当前尾部 7 轮，无法通过时在第 14 轮准确返回 `INCONCLUSIVE`，不挑最佳窗口。
+- [x] v1 baseline SHA 不变，目标测试及全量门禁通过，本任务没有协议运行逻辑 diff。
 
 **验证**
-
-从 `CGAX-Pages` 运行：
 
 ```powershell
-node --test work-products/tests/connection-settings.test.mjs
+node --test work-products/tests/ws_grpc_stream_benchmark.test.mjs
+node --test
+node --check _worker.js
+node --test work-products/tests/changelog_headings.test.mjs
+git diff --check
 ```
 
-预期：新增合同 RED，既有合同无额外回退。
+**可能修改**：`work-products/benchmarks/ws_grpc_stream_benchmark.mjs`、`work-products/tests/ws_grpc_stream_benchmark.test.mjs`、`CHANGELOG`、`_worker.js`（仅 Version）、`work-products/tests/chain_proxy.test.mjs`。
 
-**依赖**：无。
+**回滚**：成组回退纯算法、合同测试和本任务发布元数据；不触碰 v1 baseline、热路径探针或协议代码。
 
-**回滚**：仅撤销本任务新增测试，不触碰产品页面。
-
-## Task 2：实现紧凑 UI、显式 custom 状态与说明模态框
+## Task 2：实现每 profile 独立 child 与 schema v2 正式证据
 
 **范围**
 
-只修改 `../../CGAX-Pages/admin/index.html`，使 Task 1 转绿。
-
-### 2.1 标记与样式
-
-- 用 `.label-with-hint` 包裹“使用场景”标签和 `!` 按钮，复用 `.inline-hint-btn` 的现有视觉、深色模式和焦点样式。
-- 删除主表单常驻说明段落与限制列表及其无用专属样式。
-- 用一个 `connectionCustomSettings` 容器包住现有四项控件；只切换原生 `hidden`，不得禁用、清空、复制或改名控件。
-- 新增独立“使用场景说明”模态框，复用现有 overlay/modal 视觉；提供 `role="dialog"`、`aria-modal="true"`、标题关联及有名称的关闭按钮。
-- 只补充该模态框内容所需的最小局部样式，保持 320、768、1024、1440 px 无横向溢出。
-
-### 2.2 状态函数
-
-- 保留 `CONNECTION_PROFILES`、`readConnectionSettingsForm()` 和 `inferConnectionProfile()` 的精确映射。
-- 增加一个小函数同步 `connectionCustomSettings.hidden`。
-- 让加载/刷新/取消路径调用“按当前值推断 + 同步容器”；未知组合稳定为 `custom`。
-- 选择非 `custom` 时写入预设值、同步隐藏状态并调用 `markModified('proxy')`。
-- 选择 `custom` 时只显示容器，不改值、不反推、不凭空标记配置值变化。
-- `handleConnectionSettingChange()` 只保持 `custom`、显示容器并标记修改，不再按数值反推预设。
-- 保存后不调用会把显式 `custom` 改回预设的推断函数；刷新和取消仍通过 `applyProxyConfigToForm()` 重新推断。
-
-### 2.3 模态框行为
-
-- 每次打开时读取 `connectionProfile.value`，填入对应 UI 名称、说明和四条共同限制。
-- 打开后把焦点移入模态框；`Tab` 与 `Shift+Tab` 循环约束在模态框内；关闭按钮、遮罩或 `Escape` 都可关闭，并把焦点返回场景 `!` 按钮。
-- 关闭时移除本模态框的临时键盘监听，避免重复打开后累积监听器。
-- 不复用 `authTokenHelpModal` 的内容切换状态，不改变 UUID/TOKEN/自定义优选现有行为。
+- 父进程按 run 1 manifest 正序、run 2 反序依次启动 64 个 profile child，并发上限固定为 1；每个 child 独立加载 Worker，完成 warmup、校准、稳态、正式轮次、正确性和计数。
+- 成功、失败、超时和取消都只回收当前 child；父进程内存中组装终态证据，只有完整、可校验的 `frozen` 或 `INCONCLUSIVE` schema v2 才原子替换输出。取消不覆盖既有证据。
+- schema v2 记录 PID、run/order、三样本校准、全部稳态轮次、重校准原因、全部正式轮次、selected window、median/CV/trend、wall、既有热路径指标和五类哈希。
+- 环境指纹增加 logical cores 和 Windows power mode；读取失败写 `unknown`，不得猜测。`--profile` 继续仅诊断，不得写正式证据或结论。
+- 保持 32-profile、fixture 和指标定义冻结；测试用 fake child/短 fixture，不运行完整正式矩阵。
 
 **验收标准**
 
-- [x] Task 1 的目标测试全部 GREEN。
-- [x] 预设、`custom`、编辑、保存、刷新和取消符合关键状态合同。
-- [x] 隐藏字段仍使用现有校验并进入 `currentConfig.连接设置` 四字段。
-- [x] 无新增依赖、配置字段、Worker 运行改动或无关格式化。
-- [x] 当前页面的其他模态框和代理设置不回退。
+- [x] fake child 证明 64 个 profile 严格串行、第二 run 反序、PID/order 唯一且最大并发为 1。
+- [x] 超时、取消、非零退出、非法 JSON、缺失 profile 与子进程残留均 fail-closed；旧完整输出和 v1 baseline 不被破坏。
+- [x] schema v2 能从原始校准/稳态/正式轮次重算所有摘要和 `baselineStatus`，篡改 process/order、selected window、环境、指标或哈希会被拒绝。
+- [x] 计时与计数路径的探针语义不漂移，1 MiB gRPC download 复制量级合同继续通过。
 
 **验证**
-
-从 `CGAX-Pages` 运行：
 
 ```powershell
-node --test work-products/tests/connection-settings.test.mjs work-products/tests/frontend-performance.test.mjs
-git -c safe.directory='C:/Users/brand/SynologyDrive/Code/CGAX-Pages' diff --check
+node --test work-products/tests/ws_grpc_stream_benchmark.test.mjs
+node work-products/benchmarks/ws_grpc_stream_benchmark.mjs --help
+node --test
+node --check _worker.js
+node --test work-products/tests/changelog_headings.test.mjs
+git diff --check
 ```
 
-**依赖**：Task 1 RED 证据。
+**依赖**：Task 1。
 
-**回滚**：把测试和 `admin/index.html` 作为同一前端修订补丁回退；不触碰已发布的预设映射或 Worker。
+**可能修改**：benchmark、对应 benchmark 测试、`CHANGELOG`、`_worker.js`（仅 Version）和版本断言。
 
-## Checkpoint A：前端功能、可访问性与视觉
+**回滚**：回退 schema v2/编排与发布元数据，保留 Task 1 的纯算法合同；不得删除或覆盖 v1 baseline。
 
-排除说明：2026-08-01 用户明确表示“不用浏览器预览，逻辑无误即可”。以下运行时验收保持未执行、未勾选，不以源码测试冒充视觉或真实浏览器证据；该排除仅解除本轮 Task 3 的依赖，不扩大部署或生产验证范围。
-
-- [ ] 四个预设只显示选择器和 `!`，不为隐藏容器保留高度。
-- [ ] `custom` 显示四项控件且不改值；编辑到任一预设精确值时仍保持 `custom`。
-- [ ] 保存当前会话、刷新和取消修改分别符合状态合同。
-- [ ] `!` 每次显示当前场景说明及四条限制。
-- [ ] Tab/Enter/Space/Escape、关闭按钮、遮罩和焦点返回可用。
-- [ ] 320、768、1024、1440 px 无横向溢出或 checkbox 拉伸。
-- [ ] `/login/`、`/admin/`、`/noADMIN/`、`/noKV/` 无新增控制台错误。
-- [ ] 对比截图存放在 `../../CGAX-Pages/work-products/debug/`；若浏览器环境仍拦截本地地址，明确标记视觉门未完成，不以源码测试代替。
-
-本轮经用户明确排除浏览器预览后，以自动化逻辑合同继续交付；未执行项不得表述为视觉或真实浏览器验证。
-
-## Task 3：同步三语文档与补丁发布合同
+## Task 3：生成并判定双 run baseline v2
 
 **范围**
 
-在 Checkpoint A 通过或用户明确排除浏览器预览后修改 CfGfwAX：
-
-- `README.md`：简体中文、繁体中文、英文同步说明 `!` 入口、预设时隐藏底层控件、`custom` 保值，以及原有环境变量/协议边界；
-- `CHANGELOG`：按实际交付在顶部新增补丁版本节，使用已定义的 `### Change`（如实际交付语义变化则在允许标题中选择），不得改写历史节；
-- `_worker.js`：只同步 `const Version`，不改变连接运行逻辑；
-- `work-products/tests/chain_proxy.test.mjs`：同步版本断言。
-
-版本执行前重新读取当前顶部版本。若仍为 v2.4.9，则发布 v2.4.10；否则取当时版本的下一补丁号。
+- 先校验 v1 baseline SHA，再以冻结 Worker/benchmark/fixture/profile matrix/metric definition 执行一次正式双 run，写入 `work-products/debug/ws-grpc-baseline-v2.json`。
+- 仅精确放行该文件的 `.gitignore` 路径；不得放开整个 debug 目录，也不得覆盖 `ws-grpc-baseline.json`。
+- 对 schema v2 重新验证完整性、敏感字段、child 收敛和哈希。通过全部 profile 的稳态、正式和跨 run 门才标记 `frozen`。
+- 若任一门失败，记录一次完整可重算的 `INCONCLUSIVE`，不自动重复直到偶然通过；Checkpoint A 关闭并跳过 T4—T7。
 
 **验收标准**
 
-- [x] 三种语言语义一致，没有把预设描述为吞吐或视频加速。
-- [x] 新顶部 CHANGELOG、Worker Version 和测试断言完全一致。
-- [x] CHANGELOG 只使用 `ADD/Change/Debug/Delete/New` 中语义正确的三级标题。
-- [x] `_worker.js` 除版本常量外无运行逻辑变化。
+- [ ] 两个 run 各 32 个独立 child，顺序正向/反向，无遗留 child 或半成品输出。
+- [ ] `frozen` 仅在全部 profile CPU median/CV/trend、窗口、跨 run 差、环境与哈希门通过时成立。
+- [ ] `INCONCLUSIVE` 仍保存准确失败分类和完整原始轮次，但不得产生候选 GO/NO-GO 或 Worker 性能代码。
+- [ ] v1 baseline SHA 保持批准值；schema v2 证据与实际最终文件哈希一致且无敏感数据。
 
 **验证**
 
-从 `CfGfwAX` 运行：
+```powershell
+node --test work-products/tests/ws_grpc_stream_benchmark.test.mjs
+node work-products/benchmarks/ws_grpc_stream_benchmark.mjs --runs 2 --output work-products/debug/ws-grpc-baseline-v2.json
+node --test
+node --check _worker.js
+node --test work-products/tests/changelog_headings.test.mjs
+git diff --check
+```
+
+**依赖**：Task 2。
+
+**可能修改/生成**：`.gitignore`、`work-products/debug/ws-grpc-baseline-v2.json`、benchmark（仅证据揭示的测量缺陷修复，若发生必须回到 T1/T2 重跑）、发布元数据。
+
+**回滚**：只回退 v2 精确放行、v2 证据和本任务发布元数据；v1 证据、Task 1/2 通用测量修复保留。
+
+## Checkpoint A：运行时候选入口
+
+- [ ] T1/T2 目标测试和全量本地门禁通过。
+- [ ] T3 `baselineStatus` 为 `frozen`，全部决策 profile 的 CPU CV/trend 与跨 run CPU 中位数差均 `<= 10%`。
+- [ ] Worker、benchmark、fixture、profile matrix、metric definition 和环境指纹一致；无遗留 child、半成品或敏感数据。
+- [ ] `_worker.js` 除发布 Version 外没有本轮协议性能修改，XHTTP 运行逻辑不变。
+
+Checkpoint A 任一项失败即停止运行时候选；不得通过放宽阈值、删 profile、追加更多 run 或挑选最好窗口打开门禁。
+
+## Task 4：评估 gRPC 增量帧解析候选
+
+**范围**
+
+- 新建 `work-products/tests/grpc_stream.test.mjs`，从最终位置以 `../../_worker.js` 引用产品文件；先固定 gRPC 头部 1/2/3/4 字节拆分、帧体跨块、单块多帧、空消息、连续 64 B、错误和取消合同。
+- 只用游标、必要尾部和跨块帧体缓冲替换 `pending` 整段合并/剩余 `slice()`；不改压缩标志、长度、protobuf、路由、响应头、消息上限或关闭语义。
+- 相对 Checkpoint A Worker 完成两个固定 A/B pair；未达门则回滚 parser 业务代码，保留差分/生命周期通用测试与 NO-GO 证据。
+
+**验收标准**
+
+- [ ] 基线与候选对全部正常/异常 fixture 的 payload、顺序、错误和收敛完全一致。
+- [ ] 实际 copiedBytes/copyOperations/allocatedBytes 下降可解释，两个 pair 主 profile CPU 均改善至少 10%，非目标与 wall 门通过才 GO。
+- [ ] 任一门失败即最终 Worker 精确恢复 predecessor；WS、XHTTP、UDP、代理选择与全量回归通过。
+
+**验证**
+
+```powershell
+node --test work-products/tests/grpc_stream.test.mjs work-products/tests/ws_grpc_stream_benchmark.test.mjs
+node work-products/benchmarks/ws_grpc_stream_benchmark.mjs --candidate grpc-parser --phase predecessor --runs 2 --output work-products/debug/ws-grpc-candidate-grpc-parser.json
+# 候选功能回归通过后：
+node work-products/benchmarks/ws_grpc_stream_benchmark.mjs --candidate grpc-parser --phase candidate --runs 2 --evidence work-products/debug/ws-grpc-candidate-grpc-parser.json
+node --test
+node --check _worker.js
+node --test work-products/tests/changelog_headings.test.mjs
+git diff --check
+```
+
+**依赖**：Checkpoint A 全部通过。
+
+**回滚**：只回退 parser 候选和候选专属断言；保留通用 gRPC 回归、NO-GO 证据、测量基础和准确发布元数据。
+
+## Task 5：评估 gRPC 已建连上行水位候选
+
+**范围**
+
+- 只改变已建连 gRPC TCP 上行的等待时机：小块同步入队，达到高水位才等待低水位，大块直接写并等待；保留严格顺序、16 MiB/4096 条硬上限、尾部 drain 和单次重试。
+- 扩展 gRPC 生命周期测试覆盖正常 EOF、error/cancel/overflow、悬挂写入、writer 失败和重试；不改 parser、下行、响应 frame 或 XHTTP。
+- 以 Task 4 最终 Worker 为直接前序完成两个固定 A/B pair；NO-GO 时回滚本候选后再进入 T6。
+
+**验收标准**
+
+- [ ] 小消息严格按序且 writes 下降；峰值排队、水位与硬上限均有确定性测试。
+- [ ] 正常关闭写完尾部，异常路径有限收敛，无重复/丢失 payload 或未处理拒绝。
+- [ ] 两个 pair 的性能、wall 和非目标门全部通过才 GO，否则最终 Worker 恢复 predecessor。
+
+**验证**
+
+```powershell
+node --test work-products/tests/grpc_stream.test.mjs work-products/tests/xhttp_stream_uplink.test.mjs work-products/tests/ws_grpc_stream_benchmark.test.mjs
+node work-products/benchmarks/ws_grpc_stream_benchmark.mjs --candidate grpc-uplink-watermark --phase predecessor --runs 2 --output work-products/debug/ws-grpc-candidate-grpc-uplink.json
+# 候选功能回归通过后：
+node work-products/benchmarks/ws_grpc_stream_benchmark.mjs --candidate grpc-uplink-watermark --phase candidate --runs 2 --evidence work-products/debug/ws-grpc-candidate-grpc-uplink.json
+node --test
+node --check _worker.js
+node --test work-products/tests/changelog_headings.test.mjs
+git diff --check
+```
+
+**依赖**：Task 4 完成；其 NO-GO 时以回滚后的 Worker 为前序。
+
+**回滚**：只回退 gRPC 水位候选和候选专属断言，保留通用生命周期测试、NO-GO 证据与前序结论。
+
+## Task 6：评估 gRPC 下行安全缓冲复用候选
+
+**范围**
+
+- 先用污染测试证明 `grpcBridge.send()` 同步复制到独立 gRPC frame；仅在证明成立后声明 Grain 输入缓冲可复用。
+- 只改变 gRPC bridge 的复用能力，不融合 Grain/编码器，不改变空保活、响应头、protobuf 字节、关闭或 WS/XHTTP 复用语义。
+- 以 Task 5 最终 Worker 为前序完成两个固定 A/B pair；失败时移除复用声明并保留 NO-GO。
+
+**验收标准**
+
+- [ ] 修改源缓冲后，已排队输出仍与前序逐字节一致；发送失败与取消有限收敛。
+- [ ] 目标复制/分配下降且两个 pair CPU 达门，无 sends、peak queue、wall 或非目标回退。
+- [ ] 任一安全/性能门失败即恢复 predecessor，不回退此前独立 GO。
+
+**验证**
+
+```powershell
+node --test work-products/tests/grpc_stream.test.mjs work-products/tests/xhttp_stream_downlink.test.mjs work-products/tests/xhttp_stream_direct_downlink.test.mjs work-products/tests/ws_grpc_stream_benchmark.test.mjs
+node work-products/benchmarks/ws_grpc_stream_benchmark.mjs --candidate grpc-buffer-reuse --phase predecessor --runs 2 --output work-products/debug/ws-grpc-candidate-grpc-buffer-reuse.json
+# 候选功能回归通过后：
+node work-products/benchmarks/ws_grpc_stream_benchmark.mjs --candidate grpc-buffer-reuse --phase candidate --runs 2 --evidence work-products/debug/ws-grpc-candidate-grpc-buffer-reuse.json
+node --test
+node --check _worker.js
+node --test work-products/tests/changelog_headings.test.mjs
+git diff --check
+```
+
+**依赖**：Task 5 完成；其 NO-GO 时以回滚后的 Worker 为前序。
+
+**回滚**：只回退 gRPC 复用声明和候选专属断言；保留污染测试、NO-GO 证据和前序结论。
+
+## Checkpoint B：gRPC 独立结论
+
+- [ ] T4/T5/T6 各自为可复现 GO，或业务代码已回滚且有可重算 NO-GO。
+- [ ] 所有保留候选的字节、顺序、生命周期、CPU、wall、复制/分配和排队门通过。
+- [ ] XHTTP、WS、链式代理与全量回归通过；最终 Worker 精确对应每个 GO/NO-GO 证据链。
+
+## Task 7：评估 WS 已建连上行水位候选
+
+**范围**
+
+- 只在 VLESS/Trojan TCP 已建连路径评估小块同步入队、高低水位等待；不改变 Early Data、Shadowsocks、UDP、下行 Grain/frame 边界或 `binaryType` 顺序。
+- 保持显式消息任务顺序、16 MiB/4096 条硬上限、正常 close drain、异常 abort 和单次重试；补齐悬挂写入后的关闭/错误收敛测试。
+- 以 Checkpoint B Worker 为前序完成两个固定 A/B pair；失败时回滚 WS 候选。
+
+**验收标准**
+
+- [ ] VLESS/Trojan 小消息按序且 writes 下降；首包、Early Data、SS、UDP、保活和下行 frame 策略不变。
+- [ ] 水位、硬上限、close/error/cancel、重试及悬挂写入均有限收敛，无尾部丢失或未处理拒绝。
+- [ ] 两个 pair 的 CPU、wall 和非目标门均通过才 GO，否则最终 Worker 恢复 predecessor。
+
+**验证**
+
+```powershell
+node --test work-products/tests/ws_transport.test.mjs work-products/tests/xhttp_stream_uplink.test.mjs work-products/tests/connection_settings.test.mjs work-products/tests/ws_grpc_stream_benchmark.test.mjs
+node work-products/benchmarks/ws_grpc_stream_benchmark.mjs --candidate ws-uplink-watermark --phase predecessor --runs 2 --output work-products/debug/ws-grpc-candidate-ws-uplink.json
+# 候选功能回归通过后：
+node work-products/benchmarks/ws_grpc_stream_benchmark.mjs --candidate ws-uplink-watermark --phase candidate --runs 2 --evidence work-products/debug/ws-grpc-candidate-ws-uplink.json
+node --test
+node --check _worker.js
+node --test work-products/tests/changelog_headings.test.mjs
+git diff --check
+```
+
+**依赖**：Checkpoint B。
+
+**回滚**：只回退 WS 水位候选和专属断言；保留通用生命周期测试、NO-GO 证据及 gRPC 结论。
+
+## Task 8：闭环证据、状态与最终本地门禁
+
+**范围**
+
+- 按实际 `frozen`、GO/NO-GO 或 `INCONCLUSIVE` 更新 plan/todo，并写最终本地判定；覆盖现有最终判定前先原样归档第一轮 v2.4.22 文档。
+- 核对 v1/v2 baseline、候选证据、原始轮次、selected windows、环境/哈希、最终 Worker 和敏感字段；没有冻结 baseline 时明确 T4—T7 为 gate-skipped，而不是性能 NO-GO。
+- 同步最后一个实际交付版本并运行全量门禁；Cloudflare、Workers 日志、真实客户端和 WS 下行直通继续由用户控制或另立规格。
+
+**验收标准**
+
+- [ ] 任务/checkpoint 状态与证据一致，`INCONCLUSIVE`、NO-GO、GO 和未执行边界没有混写。
+- [ ] 版本三处一致，历史 CHANGELOG 与 v1 baseline 未改写；证据路径被精确跟踪且无敏感信息。
+- [ ] 全量 Node、Worker 语法、标题和差异检查通过；未执行的生产验证明确列出。
+
+**验证**
 
 ```powershell
 node --test
 node --check _worker.js
-node --test work-products/tests/changelog_headings.test.mjs
-git -c safe.directory='C:/Users/brand/SynologyDrive/Code/CfGfwAX' diff --check
+node --test work-products/tests/changelog_headings.test.mjs work-products/tests/ws_grpc_stream_benchmark.test.mjs
+git diff --check
+git status --short
 ```
 
-从 `CGAX-Pages` 重跑：
+**依赖**：T7 完成；若 T3 `INCONCLUSIVE`，则跳过 T4—T7 后直接进入。
 
-```powershell
-node --test work-products/tests/connection-settings.test.mjs work-products/tests/frontend-performance.test.mjs
-git -c safe.directory='C:/Users/brand/SynologyDrive/Code/CGAX-Pages' diff --check
-```
-
-**依赖**：Task 2，以及 Checkpoint A 通过或用户明确排除浏览器预览。
-
-**回滚**：前端补丁与发布元数据分别保持可逆；回退发布元数据时一起撤销新增顶部节、Version 和版本断言，不改写更早版本。
-
-## Checkpoint B：最终验收与发布边界
-
-- [x] 修订规格的 13 项验收标准逐项有逻辑、文档或明确排除证据。
-- [x] 两仓库目标测试、CfGfwAX 全量 Node 回归、语法和差异检查通过。
-- [x] 变更范围只含本次 UI、对应测试、三语文档、发布元数据和任务状态。
-- [x] `CGAX-Pages` 静态页面应先于 CfGfwAX 版本/文档发布；本计划不执行发布。
-- [x] Cloudflare、真实 Codex、视频和网页体验未验证时明确标记为生产未验证。
-
-## 风险与控制
-
-| 风险 | 级别 | 控制 |
-| --- | --- | --- |
-| 隐藏字段未保存或被清空 | 高 | 只切换容器 `hidden`，不 `disabled`；测试保存对象仍读取四项控件 |
-| 显式 `custom` 被自动收起 | 高 | 编辑和保存不反推；只在加载、刷新、取消时推断 |
-| 选择 `custom` 覆盖现值 | 高 | `custom` 分支零写值，并用执行型测试固定 |
-| 模态框监听器累积、焦点逃逸或焦点丢失 | 中 | 独立开关函数、成对注册/移除键盘监听、Tab/Shift+Tab 焦点约束、关闭后返回触发按钮 |
-| 复用 UUID 模态框造成状态耦合 | 中 | 只复用样式和交互模式，DOM 与函数保持独立 |
-| 小屏出现空白或溢出 | 中 | 原生 `hidden` + 四断点手工检查 |
-| 文档暗示生产性能保证 | 中 | 保留环境变量、新连接、协议和吞吐边界；本地证据单独陈述 |
-| 实施期间版本基线前移 | 低 | Task 3 开始时重新读取语义版本，不硬编码复用 v2.4.10 |
+**回滚**：只回退本任务状态、最终判定和发布元数据；不删除 v1/v2 原始证据，不回退此前独立 GO。
 
 ## 上下文加载约定
 
-- Task 1 只加载修订规格的交互/测试段和现有连接设置测试。
-- Task 2 只加载 Task 1 RED、连接设置 markup/CSS、场景函数、`applyProxyConfigToForm()`、`saveProxy()`、取消路径及 UUID 提示入口/通用模态框样式。
-- Task 3 只加载已验证 UI 行为、README 三语连接场景段、CHANGELOG 顶部及版本合同。
-- 发现需要修改预设名称/数值、接口、Worker 逻辑、依赖或发布流程时停止并询问，不自行扩展。
+- T1：修订规格测量算法段、benchmark 的校准/统计函数和目标测试。
+- T2：T1 合同、child orchestration、evidence builder/validator、环境指纹和原子写入。
+- T3：正式 CLI、v1 SHA、schema v2 校验和 `.gitignore` 精确路径。
+- T4：gRPC 请求解析、分片 fixture、直接前序 baseline 和 gRPC 差分测试。
+- T5：gRPC 已建连写入、公共上行队列、生命周期测试和 T4 最终状态。
+- T6：`grpcBridge.send()`、Grain 发送器、污染测试和 T5 最终状态。
+- T7：WS 消息任务链、已建连写入、WS 回归和 Checkpoint B 状态。
+- T8：规格验收、所有证据摘要、最终 Worker、CHANGELOG 顶部和版本合同。
+
+发现需要改变公开接口、frame/message 边界、配置、依赖、最大消息限制、XHTTP 运行逻辑或部署流程时，停止并请求新决策。
 
 ## 开放问题
 
-无。实施与审查修复已由用户后续调用公开工作流授权并完成。
+无材料性开放问题。上述趋势与尾部窗口算法已在本计划中具体化；本计划不授权执行，下一步需显式调用 `@uxu-code:build` 或 `@uxu-code:build auto`。
