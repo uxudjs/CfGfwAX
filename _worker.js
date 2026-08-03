@@ -1,4 +1,4 @@
-const Version = '2.4.30';
+const Version = '2.4.32';
 let 缓存SOCKS5白名单 = null, 调试日志打印 = false;
 let SOCKS5白名单 = ['*tapecontent.net', '*cloudatacdn.com', '*loadshare.org', '*cdn-centaurus.com', 'scholar.google.com'];
 const Pages静态页面 = 'https://uxudjs.github.io/CGAX-Pages';
@@ -2001,11 +2001,6 @@ function closeSocketQuietly(socket) {
 			socket.close();
 		}
 	} catch (error) { }
-}
-
-function formatIdentifier(arr, offset = 0) {
-	const hex = [...arr.slice(offset, offset + 16)].map(b => b.toString(16).padStart(2, '0')).join('');
-	return `${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}`;
 }
 
 async function WebSocket发送并等待(webSocket, payload) {
