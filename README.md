@@ -76,6 +76,8 @@
 
 预设模式只显示“使用场景”和旁边的 `!` 说明入口，四项底层控件仅在“自定义”时显示；`!` 会展示当前场景说明和共同限制。选择“自定义”会保留当前值，手动编辑及保存后的当前会话继续保持“自定义”；加载、刷新或取消修改时再按四项保存值精确匹配预设。预设只填充现有四项设置，不保存额外的场景 ID。设置只影响新建连接，现有长连接需重连；保活间隔用于 WebSocket/gRPC 而不作用于 XHTTP，竞速主要改善建连与失败切换，不直接提高视频吞吐。
 
+XHTTP 当前固定使用 `stream-one`，整条双向长连接属于同一个 HTTP 请求和 Worker 调用。Cloudflare 允许响应持续流式传输，但 CPU 时间仍按单次调用累计；免费 Workers 的每请求 CPU 上限为 10 ms，因此 Codex 等高频小包长连接即使已减少建连前的一次性初始化工作，也不能保证无限期不断线，本版本也未重新基准验证 XHTTP 稳态流式 CPU 改善。需要长期稳定连接时，请在 Cloudflare Dashboard 使用付费 Workers 并提高 CPU limit，或让客户端定期重连；本 Worker 尚未实现 `packet-up`/`stream-up` 的会话协调，不能只修改订阅参数替换模式。详见 [Cloudflare Workers limits](https://developers.cloudflare.com/workers/platform/limits/) 与 [Workers errors](https://developers.cloudflare.com/workers/observability/errors/)。
+
 ### 动态代理路径
 
 ```text
@@ -160,6 +162,8 @@
 
 預設模式只顯示「使用場景」和旁邊的 `!` 說明入口，四項底層控制項僅在「自訂」時顯示；`!` 會顯示目前場景說明和共同限制。選擇「自訂」會保留目前值，手動編輯及儲存後的目前工作階段繼續保持「自訂」；載入、重新整理或取消修改時才會依四項儲存值精確比對預設。預設只會填入既有四項設定，不會儲存額外的場景 ID。設定只影響新建連線，現有長連線需重新連線；保活間隔用於 WebSocket/gRPC 而不作用於 XHTTP，競速主要改善連線建立與失敗切換，不會直接提高影片吞吐量。
 
+XHTTP 目前固定使用 `stream-one`，整條雙向長連線屬於同一個 HTTP 請求和 Worker 呼叫。Cloudflare 允許回應持續串流傳輸，但 CPU 時間仍依單次呼叫累計；免費 Workers 的每請求 CPU 上限為 10 ms，因此 Codex 等高頻小封包長連線即使已減少連線建立前的一次性初始化工作，也不能保證無限期不中斷，本版本亦未重新基準驗證 XHTTP 穩態串流 CPU 改善。需要長期穩定連線時，請在 Cloudflare Dashboard 使用付費 Workers 並提高 CPU limit，或讓客戶端定期重新連線；本 Worker 尚未實作 `packet-up`/`stream-up` 的工作階段協調，不能只修改訂閱參數替換模式。詳見 [Cloudflare Workers limits](https://developers.cloudflare.com/workers/platform/limits/) 與 [Workers errors](https://developers.cloudflare.com/workers/observability/errors/)。
+
 ### 動態代理路徑
 
 ```text
@@ -243,6 +247,8 @@ Visit `https://your-domain/admin` and sign in with the `ADMIN` password. You can
 | Custom | Keep current value | Custom | Custom | Custom |
 
 Preset modes show only **Profile** and the adjacent `!` help entry; the four underlying controls appear only for **Custom**, while `!` shows the current profile description and shared limits. Selecting **Custom** preserves the current values, and manual edits plus a successful save keep the current session in **Custom**. Loading, refreshing, or cancelling changes infers the profile again from the four saved values. Profiles only fill the existing four settings and do not persist a separate profile ID. Changes affect new connections only, so existing long-lived connections must reconnect. Keepalive applies to WebSocket/gRPC, not XHTTP, while racing targets connection setup and failover rather than sustained video throughput.
+
+XHTTP currently uses `stream-one`, so the full bidirectional connection belongs to one HTTP request and one Worker invocation. Cloudflare permits a response to keep streaming, but CPU time still accumulates within that invocation; Free Workers allow 10 ms of CPU per request, so high-frequency small-packet sessions such as Codex cannot be guaranteed to remain connected indefinitely even after reducing one-time setup work. This release does not claim a newly benchmarked reduction in steady-state XHTTP streaming CPU. For durable sessions, use paid Workers and raise the CPU limit in the Cloudflare Dashboard, or reconnect periodically. This Worker does not implement the session coordination required by `packet-up`/`stream-up`, so changing only the subscription mode is not compatible. See [Cloudflare Workers limits](https://developers.cloudflare.com/workers/platform/limits/) and [Workers errors](https://developers.cloudflare.com/workers/observability/errors/).
 
 ### Dynamic proxy paths
 

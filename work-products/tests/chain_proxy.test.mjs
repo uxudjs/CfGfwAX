@@ -6,10 +6,12 @@ import test from 'node:test';
 if (!globalThis.WebSocket) globalThis.WebSocket = { OPEN: 1, CLOSING: 2, CLOSED: 3 };
 
 const 原生Digest = crypto.subtle.digest.bind(crypto.subtle);
+let MD5调用次数 = 0;
 Object.defineProperty(crypto.subtle, 'digest', {
 	value: async (algorithm, data) => {
 		const name = typeof algorithm === 'string' ? algorithm : algorithm.name;
 		if (name.toUpperCase() !== 'MD5') return 原生Digest(algorithm, data);
+		MD5调用次数++;
 		const digest = createHash('md5').update(Buffer.from(data)).digest();
 		return digest.buffer.slice(digest.byteOffset, digest.byteOffset + digest.byteLength);
 	}
@@ -22,13 +24,20 @@ const { default: worker, 追加API备注, base64SecretEncode, 读取config_JSON,
 {
 	const request = new Request('https://worker.example/version?uuid=11111111-1111-4111-8111-111111111111');
 	Object.defineProperty(request, 'cf', { value: { colo: 'TPE' } });
+	let KV读取次数 = 0;
+	const 初始MD5调用次数 = MD5调用次数;
 	const response = await worker.fetch(
 		request,
-		{ UUID: '11111111-1111-4111-8111-111111111111' },
+		{
+			UUID: '11111111-1111-4111-8111-111111111111',
+			KV: { get: async () => { KV读取次数++; return null; } },
+		},
 		{ waitUntil() { } },
 	);
 	assert.equal(response.status, 200);
-	assert.deepEqual(await response.json(), { Version: '2.4.29' });
+	assert.deepEqual(await response.json(), { Version: '2.4.30' });
+	assert.equal(MD5调用次数, 初始MD5调用次数, '合法 UUID 不应执行回退 MD5');
+	assert.equal(KV读取次数, 0, '版本接口不应读取连接设置 KV');
 }
 
 {
