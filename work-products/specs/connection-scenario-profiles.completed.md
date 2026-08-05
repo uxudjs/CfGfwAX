@@ -200,12 +200,12 @@ function syncConnectionCustomSettingsVisibility(profileId) {
 ```powershell
 # CGAX-Pages
 node --test work-products/tests/connection-settings.test.mjs work-products/tests/frontend-performance.test.mjs
-git -c safe.directory='C:/Users/brand/SynologyDrive/Code/CGAX-Pages' diff --check
+git -c safe.directory='C:/Users/brand/Code/CGAX-Pages' diff --check
 
 # CfGfwAX
 node --test
 node --check _worker.js
-git -c safe.directory='C:/Users/brand/SynologyDrive/Code/CfGfwAX' diff --check
+git -c safe.directory='C:/Users/brand/Code/CfGfwAX' diff --check
 ```
 
 手工 UI 验证：

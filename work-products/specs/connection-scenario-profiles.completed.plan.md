@@ -136,7 +136,7 @@ node --test work-products/tests/connection-settings.test.mjs
 
 ```powershell
 node --test work-products/tests/connection-settings.test.mjs work-products/tests/frontend-performance.test.mjs
-git -c safe.directory='C:/Users/brand/SynologyDrive/Code/CGAX-Pages' diff --check
+git -c safe.directory='C:/Users/brand/Code/CGAX-Pages' diff --check
 ```
 
 **依赖**：Task 1 RED 证据。
@@ -186,14 +186,14 @@ git -c safe.directory='C:/Users/brand/SynologyDrive/Code/CGAX-Pages' diff --chec
 node --test
 node --check _worker.js
 node --test work-products/tests/changelog_headings.test.mjs
-git -c safe.directory='C:/Users/brand/SynologyDrive/Code/CfGfwAX' diff --check
+git -c safe.directory='C:/Users/brand/Code/CfGfwAX' diff --check
 ```
 
 从 `CGAX-Pages` 重跑：
 
 ```powershell
 node --test work-products/tests/connection-settings.test.mjs work-products/tests/frontend-performance.test.mjs
-git -c safe.directory='C:/Users/brand/SynologyDrive/Code/CGAX-Pages' diff --check
+git -c safe.directory='C:/Users/brand/Code/CGAX-Pages' diff --check
 ```
 
 **依赖**：Task 2，以及 Checkpoint A 通过或用户明确排除浏览器预览。
