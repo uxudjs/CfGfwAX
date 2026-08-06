@@ -35,7 +35,7 @@ const { default: worker, 追加API备注, base64SecretEncode, 读取config_JSON,
 		{ waitUntil() { } },
 	);
 	assert.equal(response.status, 200);
-	assert.deepEqual(await response.json(), { Version: '2.4.32' });
+	assert.deepEqual(await response.json(), { Version: '3.0.2' });
 	assert.equal(MD5调用次数, 初始MD5调用次数, '合法 UUID 不应执行回退 MD5');
 	assert.equal(KV读取次数, 0, '版本接口不应读取连接设置 KV');
 }

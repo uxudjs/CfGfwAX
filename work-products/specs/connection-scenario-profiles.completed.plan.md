@@ -9,7 +9,7 @@
 - 用户本轮显式调用 `@uxu-code:plan`，授权把当前 `work-products/SPEC.md` 的 2026-08-01 交互修订草案转换为实施计划；这不等于授权执行计划。
 - 修订规格已明确目标、范围、交互状态、配置兼容、可访问性、测试策略、13 项验收标准、非目标和回滚边界，且没有材料性开放问题，足以规划，无需另建规格。
 - 当前实现基线已经核对：
-  - `../../CGAX-Pages/admin/index.html` 已有五个场景和四组精确映射；
+  - `../../../CGAX-Pages/admin/index.html` 已有五个场景和四组精确映射；
   - `connectionProfileDescription` 与 `connectionProfileNotes` 常驻主表单；
   - 四项底层控件始终显示；
   - `handleConnectionSettingChange()` 会立即调用 `syncConnectionProfileSelection()`；
@@ -55,7 +55,7 @@
 
 **范围**
 
-只修改 `../../CGAX-Pages/work-products/tests/connection-settings.test.mjs`，不得修改产品页面。
+只修改 `../../../CGAX-Pages/work-products/tests/connection-settings.test.mjs`，不得修改产品页面。
 
 在保留现有五项映射、配置保存、最小值和 checkbox 固定宽度断言的基础上，增加以下回归：
 
@@ -95,7 +95,7 @@ node --test work-products/tests/connection-settings.test.mjs
 
 **范围**
 
-只修改 `../../CGAX-Pages/admin/index.html`，使 Task 1 转绿。
+只修改 `../../../CGAX-Pages/admin/index.html`，使 Task 1 转绿。
 
 ### 2.1 标记与样式
 
@@ -136,7 +136,7 @@ node --test work-products/tests/connection-settings.test.mjs
 
 ```powershell
 node --test work-products/tests/connection-settings.test.mjs work-products/tests/frontend-performance.test.mjs
-git -c safe.directory='C:/Users/brand/Code/CGAX-Pages' diff --check
+git -c safe.directory='C:/Code/CGAX-Pages' diff --check
 ```
 
 **依赖**：Task 1 RED 证据。
@@ -154,7 +154,7 @@ git -c safe.directory='C:/Users/brand/Code/CGAX-Pages' diff --check
 - [ ] Tab/Enter/Space/Escape、关闭按钮、遮罩和焦点返回可用。
 - [ ] 320、768、1024、1440 px 无横向溢出或 checkbox 拉伸。
 - [ ] `/login/`、`/admin/`、`/noADMIN/`、`/noKV/` 无新增控制台错误。
-- [ ] 对比截图存放在 `../../CGAX-Pages/work-products/debug/`；若浏览器环境仍拦截本地地址，明确标记视觉门未完成，不以源码测试代替。
+- [ ] 对比截图存放在 `../../../CGAX-Pages/work-products/debug/`；若浏览器环境仍拦截本地地址，明确标记视觉门未完成，不以源码测试代替。
 
 本轮经用户明确排除浏览器预览后，以自动化逻辑合同继续交付；未执行项不得表述为视觉或真实浏览器验证。
 
@@ -186,14 +186,14 @@ git -c safe.directory='C:/Users/brand/Code/CGAX-Pages' diff --check
 node --test
 node --check _worker.js
 node --test work-products/tests/changelog_headings.test.mjs
-git -c safe.directory='C:/Users/brand/Code/CfGfwAX' diff --check
+git -c safe.directory='C:/Code/CfGfwAX' diff --check
 ```
 
 从 `CGAX-Pages` 重跑：
 
 ```powershell
 node --test work-products/tests/connection-settings.test.mjs work-products/tests/frontend-performance.test.mjs
-git -c safe.directory='C:/Users/brand/Code/CGAX-Pages' diff --check
+git -c safe.directory='C:/Code/CGAX-Pages' diff --check
 ```
 
 **依赖**：Task 2，以及 Checkpoint A 通过或用户明确排除浏览器预览。

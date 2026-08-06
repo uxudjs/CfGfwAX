@@ -1,56 +1,54 @@
-# Tasks: WS 与 gRPC 稳态基准 v2 与协议专属候选
+# Tasks: 剔除 Shadowsocks，收敛为 VLESS-only
 
-## 已完成前置事实
+## 规划与授权
 
-- [x] 用户通过 `@uxu-code:plan` 批准 2026-08-02 修订规格进入规划。
-- [x] 第一轮 plan/todo 已原样归档到 `work-products/specs/ws-grpc-first-pass.completed.*.md`。
-- [x] v1 baseline 为 `INCONCLUSIVE`，SHA-256 固定为 `3321f9c2e38ebbdbcee7a46ef6af86e65894106cf24bc52800a20c059f27afb9`。
-- [x] XHTTP 运行逻辑与 Cloudflare/真实客户端操作不在本轮自动执行范围。
+- [x] 已批准 `work-products/SPEC.md` 中的两个决策：保留 VLESS 上游出口能力；实施版本为 `3.0.0`。
+- [x] 已用 CodeGraph 核对 CfGfwAX、CGAX-Pages、BestCfCdn 的当前合同边界。
+- [x] 旧 WS/gRPC 活动计划已保留为 `work-products/specs/ws-grpc-schema-v2-optimization.paused.*.md`。
+- [x] 用户审阅并批准本计划。
+- [x] 用户明确调用 `@uxu-code:build auto`；提交、推送、PR、部署仍未授权。
 
-## Phase 1：测量合同 v2
+## Phase 1：Worker VLESS-only
 
-- [x] T1 固化三样本中位数校准、5 轮稳态窗口、7 轮正式尾部窗口、趋势公式、重校准与轮数上限；目标测试和全量门禁通过（v2.4.25）。
-- [x] T2 实现每 profile 独立 child、run 1 正序/run 2 反序、schema v2、环境指纹、当前 child 回收和原子终态证据；审查回归与连续两次全量门禁通过（v2.4.27），未改协议运行逻辑。
-- [ ] T3 运行一次双 run 完整矩阵，写 `ws-grpc-baseline-v2.json`；只在全部门通过时冻结，否则保留一次 `INCONCLUSIVE` 并停止候选。
+- [x] T1 记录三仓工作树、版本合同与测试基线；不得清理既有改动。
+- [x] T2 RED/GREEN：删除 Worker Shadowsocks 入站、AEAD、`enc` 选路和 SS Early Data 分支。
+- [x] T3 RED/GREEN：默认/旧 KV/管理 API 固定 `协议类型: "vless"`，删除 `SS`，LINK 固定 `vless://`。
+- [x] T4 RED/GREEN：明文、base64、订阅生成器与 API 合并边界仅保留 `vless://` URI，同时保留 IP 候选行。
 
-## Checkpoint A：运行时候选入口
+## Checkpoint A：Worker 合同
 
-- [x] A1 T1/T2 合同、目标测试和全量本地门禁通过。
-- [ ] A2 v2 baseline 的全部 32 profiles 完成独立 child、稳态和正式选中窗口。
-- [ ] A3 每个决策 profile CPU CV/trend 与跨 run CPU 中位数差均 `<= 10%`，环境和五类哈希一致。
-- [ ] A4 v1 baseline SHA 未变，无遗留 child、半成品、敏感数据或协议运行逻辑 diff。
+- [x] 每个缺口都有可归因的 RED，并在同任务内转为 GREEN。
+- [x] CfGfwAX 全量 Node 测试、Worker 语法和 diff 检查通过。
+- [x] VLESS WS/gRPC/XHTTP、TCP、UDP/DNS、Early Data 与批准的上游出口能力保持通过。
+- [x] 最终订阅中的完整节点 URI 只有 `vless://`。
 
-若 A1—A4 任一失败：T4—T7 标记 `GATE-SKIPPED`，直接进入 T8；不得自动加 run、放宽门槛或挑最佳窗口。
+## Phase 2：管理 UI 与发布合同
 
-## Phase 2：gRPC 独立候选
+- [x] T5 RED/GREEN：CGAX-Pages 只显示/保存 VLESS，删除全部 SS 控件、弹窗、动态加载与保存逻辑。
+- [ ] T5 本地 smoke：浏览器客户端拦截 `127.0.0.1`，未形成 `/admin/`、`/login/` 真实渲染证据；静态与自动化检查已通过。
+- [x] T6 README 简中、繁中、英文同步为 VLESS-only，并说明旧 SS 节点失效且无自动转换。
+- [x] T6 prepend `v3.0.0` CHANGELOG `### Delete`，同步 `_worker.js` Version 与版本断言。
 
-- [ ] T4 创建 gRPC 分片/差分/生命周期合同并评估增量 parser；两个 A/B pair 未全部达门则回滚业务代码并记录 NO-GO。
-- [ ] T5 评估 gRPC 已建连上行高低水位；保持顺序、硬上限、尾部 drain 和单次重试，未达门则独立回滚。
-- [ ] T6 先通过源缓冲污染测试，再评估 gRPC 下行 Grain 缓冲复用；安全或性能门失败即移除复用声明。
+## Checkpoint B：跨仓合同
 
-## Checkpoint B：gRPC 独立结论
+- [x] CGAX-Pages 自动化与跨仓 Worker 回归通过。
+- [x] `_worker.js`、CHANGELOG 顶部、`chain_proxy.test.mjs` 三点一致为 `3.0.1`。
+- [x] BestCfCdn 未被本次实施修改。
 
-- [ ] B1 T4/T5/T6 各自为可复现 GO，或业务代码已回滚且有可重算 NO-GO。
-- [ ] B2 所有保留候选的字节、顺序、生命周期、CPU、wall、复制/分配和排队门通过。
-- [ ] B3 XHTTP、WS、链式代理和全量回归通过，最终 Worker 与证据链一致。
+## Phase 3：三仓本地门禁
 
-## Phase 3：WS 独立候选
+- [x] T7 CfGfwAX：`node --test`、`node --check _worker.js`、CHANGELOG 标题、diff 检查通过。
+- [x] T7 CGAX-Pages：`node --test`、跨仓 Worker 回归、静态 smoke、diff 检查通过。
+- [x] T7 BestCfCdn：项目 `.venv` 下聚焦 `test_chain_proxy.py` 通过，且无本次新增差异。
+- [x] 本次新增差异仅含批准文件，高信号 secret 扫描无命中；既有连接场景工作区改动原样保留。
+- [x] 最终结论仅声明本地验证；提交、推送、部署、Cloudflare 与真实客户端验证保持未执行。
 
-- [ ] T7 只评估 VLESS/Trojan 已建连 TCP 上行水位；不改 Early Data、SS、UDP、下行 frame 或 `binaryType`，未达门则回滚并记录 NO-GO。
+## 回滚准备
 
-## Phase 4：闭环
+- [x] 审查后 RED/GREEN：管理 API 保存 `config.json` 仅写入一次，且持久化前完成 VLESS-only 归一化。
+- [x] 基准不稳定 RED/GREEN：字节正确性测试显式关闭真实 CPU 稳态门禁并固定预热，正式基准默认行为不变。
+- [x] 发布契约已同步到 `3.0.1`：Worker Version、CHANGELOG 顶部与版本回归断言一致。
 
-- [ ] T8 归档第一轮最终判定，更新 plan/todo 与最终本地结论，核对证据/哈希/最终 Worker/敏感字段并完成版本与全量门禁。
-
-## 执行规则
-
-- 本计划不等于实施授权；只接受后续公开入口 `@uxu-code:build` 或 `@uxu-code:build auto`。
-- T1—T3 前禁止运行时候选；Checkpoint A 未全绿时 T4—T7 必须 gate-skipped。
-- 每个候选使用 plan 固定的主/支撑/非目标 profile 和两个 A/B pair，禁止运行后改判定集合。
-- GO 最终 Worker 必须精确对应 candidate；NO-GO 最终 Worker 必须精确恢复 predecessor，同时保留通用测试与证据。
-- 每个完成任务按当前顶部版本递增补丁，同步 `CHANGELOG`、Worker Version 和版本断言。
-- 不运行 Wrangler、不部署 Cloudflare、不把 Node CPU 数字表述为 Workers 生产证明。
-
-## 当前状态
-
-T1 已发布为 v2.4.25；T2 经审查修复四项 fail-closed 缺口后以 v2.4.27 完成，32/32 目标测试及最终代码状态连续两次 134/134 全量套件通过。T3 尚未执行，Checkpoint A 的 A2—A4 继续关闭；WS/gRPC/XHTTP 运行逻辑未因本轮测量工作改变。
+- [x] 每个任务只反向应用任务自有文件差异，不使用 `reset`、`checkout` 或工作树清理。
+- [ ] 未来部署前由用户备份 KV `config.json`；代码回滚不能自动恢复已经删除的 `SS` 字段。
+- [ ] 若部署获授权，记录 UI 先、Worker 后的发布顺序；回滚时协调恢复 UI、Worker 与 KV 备份。

@@ -886,27 +886,45 @@ async function runBenchmarkInProcess(normalized) {
 		let measurementIterations = calibration.selectedIterations;
 		const steadyStatePhases = [];
 		let steadyState = null;
-		for (let attempt = 0; attempt <= MAX_STEADY_STATE_RECALIBRATIONS; attempt++) {
-			steadyState = await stabilizeMeasurementIterations(
-				profile,
-				fixture,
-				measurementIterations,
-				normalized.warmup,
-				normalized.uplinkStrategy,
-				normalized.workerSource,
-				normalized.downlinkStrategy,
-			);
+		if (normalized.enforceSteadyState === false) {
+			const warmups = [];
+			for (let round = 0; round < normalized.warmup; round++) {
+				warmups.push(await measureRound(profile, fixture, measurementIterations, normalized.uplinkStrategy, normalized.workerSource, normalized.downlinkStrategy));
+			}
+			steadyState = {
+				status: 'disabled',
+				reason: 'explicitly-disabled',
+				stableWindows: 0,
+				cpuCv: null,
+				trendRatio: null,
+				sampleCpuMedianMs: calibration.sampleCpuMs,
+				selectedIterations: measurementIterations,
+				warmups,
+			};
 			steadyStatePhases.push({ ...steadyState, iterations: measurementIterations });
-			if (steadyState.status === 'ready') break;
-			if (steadyState.status !== 'recalibrate') {
-				throw Object.assign(new Error(`${profile}: steady state unavailable: ${steadyState.reason}`), { steadyState });
+		} else {
+			for (let attempt = 0; attempt <= MAX_STEADY_STATE_RECALIBRATIONS; attempt++) {
+				steadyState = await stabilizeMeasurementIterations(
+					profile,
+					fixture,
+					measurementIterations,
+					normalized.warmup,
+					normalized.uplinkStrategy,
+					normalized.workerSource,
+					normalized.downlinkStrategy,
+				);
+				steadyStatePhases.push({ ...steadyState, iterations: measurementIterations });
+				if (steadyState.status === 'ready') break;
+				if (steadyState.status !== 'recalibrate') {
+					throw Object.assign(new Error(`${profile}: steady state unavailable: ${steadyState.reason}`), { steadyState });
+				}
+				if (attempt === MAX_STEADY_STATE_RECALIBRATIONS) {
+					throw Object.assign(new Error(`${profile}: steady state unavailable: max-steady-state-recalibrations-reached`), {
+						steadyState: { ...steadyState, status: 'limited', reason: 'max-steady-state-recalibrations-reached' },
+					});
+				}
+				measurementIterations = steadyState.nextIterations;
 			}
-			if (attempt === MAX_STEADY_STATE_RECALIBRATIONS) {
-				throw Object.assign(new Error(`${profile}: steady state unavailable: max-steady-state-recalibrations-reached`), {
-					steadyState: { ...steadyState, status: 'limited', reason: 'max-steady-state-recalibrations-reached' },
-				});
-			}
-			measurementIterations = steadyState.nextIterations;
 		}
 		const warmups = steadyStatePhases.flatMap(phase => phase.warmups);
 		const measurementRounds = [];
@@ -989,6 +1007,7 @@ async function runBenchmarkInProcess(normalized) {
 			maxSteadyStateRounds: MAX_STEADY_STATE_ROUNDS,
 			maxMeasurementRoundMultiplier: MAX_MEASUREMENT_ROUND_MULTIPLIER,
 			measurementStability: normalized.enforceMeasurementStability === false ? 'disabled' : 'required',
+			steadyStateGate: normalized.enforceSteadyState === false ? 'disabled' : 'required',
 			steadyStateCvLimit: STEADY_STATE_CV_LIMIT,
 			steadyStateTrendLimit: STEADY_STATE_TREND_LIMIT,
 			uplinkStrategy: normalized.uplinkStrategy,

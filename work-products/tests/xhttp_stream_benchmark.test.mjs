@@ -96,14 +96,18 @@ test('小型基准生成完整环境、逐轮、代理和字节正确性字段',
 		output: null,
 		totalBytes: 128 * 1024,
 		downlinkStrategy: 'shared-grain',
+		enforceSteadyState: false,
 		enforceStability: false,
 		enforceMeasurementStability: false,
 	});
 	assert.equal(result.schemaVersion, 1);
 	assert.equal(result.config.totalBytesPerDirection, 128 * 1024);
 	assert.equal(result.config.downlinkStrategy, 'shared-grain');
+	assert.equal(result.config.steadyStateGate, 'disabled');
 	assert.equal(result.profiles.length, 1);
 	assert.equal(result.profiles[0].rounds.length, 3);
+	assert.equal(result.profiles[0].steadyState.status, 'disabled');
+	assert.equal(result.profiles[0].warmups.length, 1);
 	assert.ok(result.profiles[0].rounds.every(round => round.downlinkStrategy === 'shared-grain'));
 	assert.equal(result.profiles[0].output.totalBytes, 128 * 1024);
 	assert.match(result.profiles[0].output.sha256, /^[a-f0-9]{64}$/);

@@ -14,7 +14,7 @@
 
 ### 主要功能
 
-- 🛡️ **多协议支持** - 支持 VLESS 与 Shadowsocks
+- 🛡️ **节点协议** - 仅支持 VLESS 节点协议
 - 📊 **管理后台** - 在线修改配置、查看日志与流量统计
 - 🛠️ **灵活部署** - 支持 Cloudflare Workers 与 Pages 上传
 - 🔄 **订阅生成** - 适配 Clash、Sing-box、Loon、Quantumult X 等主流客户端
@@ -23,6 +23,8 @@
 
 ### 协议维护说明
 
+- Shadowsocks 节点协议已移除；旧 Shadowsocks 节点将失效，且不提供兼容期或自动转换。
+- SOCKS5、HTTP、HTTPS、TURN、SSTP 与 ProxyIP 仅作为 VLESS 的上游链式代理保留，不是客户端节点协议。
 - Trojan 已从 Worker 入站、订阅生成和管理页面中移除，后续不再维护。
 - Trojan 流量存在较明确的代理协议特征，本项目不建议继续使用或部署同类节点。
 - Surge 不原生支持本项目保留的 VLESS 节点格式，因此本项目不再提供 Surge 订阅兼容；`?surge`、`target=surge` 或 Surge User-Agent 请求会返回 HTTP 410。
@@ -100,7 +102,7 @@ XHTTP 当前固定使用 `stream-one`，整条双向长连接属于同一个 HTT
 
 ### 主要功能
 
-- 🛡️ **多協議支援** - 支援 VLESS 與 Shadowsocks
+- 🛡️ **節點協議** - 僅支援 VLESS 節點協議
 - 📊 **管理後台** - 線上修改設定、查看日誌與流量統計
 - 🛠️ **彈性部署** - 支援 Cloudflare Workers 與 Pages 上傳
 - 🔄 **訂閱產生** - 適配 Clash、Sing-box、Loon、Quantumult X 等主流用戶端
@@ -109,6 +111,8 @@ XHTTP 当前固定使用 `stream-one`，整条双向长连接属于同一个 HTT
 
 ### 協議維護說明
 
+- Shadowsocks 節點協議已移除；舊 Shadowsocks 節點將失效，且不提供相容期或自動轉換。
+- SOCKS5、HTTP、HTTPS、TURN、SSTP 與 ProxyIP 僅作為 VLESS 的上游鏈式代理保留，不是用戶端節點協議。
 - Trojan 已從 Worker 入站、訂閱產生和管理頁面中移除，後續不再維護。
 - Trojan 流量存在較明確的代理協議特徵，本專案不建議繼續使用或部署同類節點。
 - Surge 不原生支援本專案保留的 VLESS 節點格式，因此本專案不再提供 Surge 訂閱相容；`?surge`、`target=surge` 或 Surge User-Agent 請求會傳回 HTTP 410。
@@ -186,7 +190,7 @@ A Cloudflare Workers/Pages edge tunnel solution further developed from edgetunne
 
 ### Features
 
-- 🛡️ **Multiple protocols** - Supports VLESS and Shadowsocks
+- 🛡️ **Node protocol** - Supports the VLESS node protocol only
 - 📊 **Admin panel** - Update settings and inspect logs and traffic statistics online
 - 🛠️ **Flexible deployment** - Supports Cloudflare Workers and Pages upload
 - 🔄 **Subscription generation** - Works with Clash, Sing-box, Loon, Quantumult X, and other popular clients
@@ -195,6 +199,8 @@ A Cloudflare Workers/Pages edge tunnel solution further developed from edgetunne
 
 ### Protocol maintenance notice
 
+- The Shadowsocks node protocol has been removed. Existing Shadowsocks nodes stop working; no compatibility period or automatic conversion is provided.
+- SOCKS5, HTTP, HTTPS, TURN, SSTP, and ProxyIP remain only as upstream chained proxies for VLESS; they are not client node protocols.
 - Trojan has been removed from Worker ingress, subscription generation, and the admin panel, and is no longer maintained.
 - Trojan traffic has comparatively recognizable proxy-protocol characteristics; this project does not recommend continuing to use or deploy similar nodes.
 - Surge does not natively support the retained VLESS node format, so this project no longer provides Surge subscription compatibility; requests using `?surge`, `target=surge`, or a Surge User-Agent return HTTP 410.

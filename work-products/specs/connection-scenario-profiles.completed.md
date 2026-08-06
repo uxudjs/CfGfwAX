@@ -114,9 +114,9 @@
 
 实施阶段允许修改：
 
-- `../../CGAX-Pages/admin/index.html`
+- `../../../CGAX-Pages/admin/index.html`
   - `!` 说明入口、独立说明模态框、自定义设置容器及模式显示联动。
-- `../../CGAX-Pages/work-products/tests/connection-settings.test.mjs`
+- `../../../CGAX-Pages/work-products/tests/connection-settings.test.mjs`
   - 从测试最终位置以 `../../admin/index.html` 引用产品文件；
   - 增加说明入口、模态框内容、显示条件、值保留及状态同步回归。
 - `../README.md`
@@ -180,7 +180,7 @@ function syncConnectionCustomSettingsVisibility(profileId) {
 
 ## 测试策略
 
-扩展既有 `../../CGAX-Pages/work-products/tests/connection-settings.test.mjs`，覆盖：
+扩展既有 `../../../CGAX-Pages/work-products/tests/connection-settings.test.mjs`，覆盖：
 
 - 五个下拉选项和四个精确映射；
 - 默认配置推断 `balanced`；
@@ -200,12 +200,12 @@ function syncConnectionCustomSettingsVisibility(profileId) {
 ```powershell
 # CGAX-Pages
 node --test work-products/tests/connection-settings.test.mjs work-products/tests/frontend-performance.test.mjs
-git -c safe.directory='C:/Users/brand/Code/CGAX-Pages' diff --check
+git -c safe.directory='C:/Code/CGAX-Pages' diff --check
 
 # CfGfwAX
 node --test
 node --check _worker.js
-git -c safe.directory='C:/Users/brand/Code/CfGfwAX' diff --check
+git -c safe.directory='C:/Code/CfGfwAX' diff --check
 ```
 
 手工 UI 验证：

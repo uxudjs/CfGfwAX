@@ -30,7 +30,7 @@
 - [ ] A5 Tab/Enter/Space/Escape、关闭按钮、遮罩和焦点返回通过。
 - [ ] A6 320、768、1024、1440 px 无横向溢出或 checkbox 拉伸。
 - [ ] A7 四条静态路径无新增控制台错误。
-- [ ] A8 前后对比截图保存到 `../../CGAX-Pages/work-products/debug/`；浏览器受阻时保持未完成。
+- [ ] A8 前后对比截图保存到 `../../../CGAX-Pages/work-products/debug/`；浏览器受阻时保持未完成。
 
 ## Phase 3：文档与发布
 

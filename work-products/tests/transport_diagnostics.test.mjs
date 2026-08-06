@@ -89,5 +89,5 @@ test('三个入站处理器显式传递自己的传输类型', () => {
 
 	assert.equal(calls.filter(call => call.includes("'xhttp'")).length, 1);
 	assert.equal(calls.filter(call => call.includes("'grpc'")).length, 1);
-	assert.equal(calls.filter(call => call.includes("'websocket'")).length, 3);
+	assert.equal(calls.filter(call => call.includes("'websocket'")).length, 1);
 });
